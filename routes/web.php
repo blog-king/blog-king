@@ -13,11 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('homepage');
-
-Route::get('login', function () {
-    // todo: 跳转到 github 进行登录
-    return view('welcome');
-})->name('login');
+Route::post('logout', 'LoginController@logout')->name('logout');
+Route::get("/", "HomeController@home")->name("home");//首页
+Route::get("login", "LoginController@oauthRedirectToOtherPlatformProvider")->name("login"); //登录
+Route::get("oauth/github/callback", "LoginController@githubRedirectCallback");//github登录回调地址
