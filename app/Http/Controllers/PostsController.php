@@ -85,7 +85,7 @@ class PostsController extends Controller
      * @apiGroup post
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     * @api /posts
+     * @api /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
      * @apiParam {int} limit 限制多少页
