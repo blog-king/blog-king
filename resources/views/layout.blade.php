@@ -8,6 +8,7 @@
     <title>{{ $title ?? config('app.name') }}</title>
     @include('bootstrap')
     <link rel="stylesheet" href="{{ asset('/css/app.css') }}">
+    @yield('header')
 </head>
 <body>
 @include('navbar')
