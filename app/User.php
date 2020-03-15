@@ -33,7 +33,7 @@ class User extends Authenticatable
 
     protected $hidden = ['password'];
 
-    protected $visible = ['id', 'name', 'email', 'phone', 'sex', 'avatar', 'introduction'];
+    protected $visible = ['id', 'name', 'phone', 'sex', 'avatar', 'introduction'];
 
     /**
      * 获取用户头像，如果用户头像没有设置则返回默认头像
@@ -42,7 +42,9 @@ class User extends Authenticatable
     public function getAvatarAttribute()
     {
         if (empty($this->attributes['avatar'])) {
-            return self::DEFAULT_AVATAR;
+            //return self::DEFAULT_AVATAR;
+            //todo 临时使用外部头像地址
+            return "https://api.adorable.io/avatars/60/" . md5($this->attributes['name']) . ".png";
         }
         return $this->attributes['avatar'];
     }
