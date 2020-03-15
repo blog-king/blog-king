@@ -85,7 +85,7 @@ class PostsController extends Controller
      * @apiGroup post
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
-     * @api /posts 文章列表api
+     * @api {GET} /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
      * @apiParam {int} limit 限制多少页
@@ -96,7 +96,7 @@ class PostsController extends Controller
      * @apiSuccess {description} list.description 文章的描述
      * @apiSuccess {int} list.user_id 文章的用户id
      * @apiSuccess {int} list.status 文章的类型，1为发布，2为草稿
-     *@apiSuccess {string} list.commented_count 评论数
+     * @apiSuccess {string} list.commented_count 评论数
      * @apiSuccess {string} list.liked_count  点赞数
      * @apiSuccess {string} list.bookmarked_count 收藏数
      * @apiSuccess {string} list.viewed_count 阅读数
@@ -232,7 +232,7 @@ class PostsController extends Controller
      * @throws
      *
      * @apiGroup post
-     * @api {PATCH} /post/{$id} 文章删除
+     * @api {PATCH} /post/{$id} 文章更新
      * @apiSuccess {bool} success 是否成功
      *
      */
