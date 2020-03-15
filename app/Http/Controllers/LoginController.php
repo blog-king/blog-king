@@ -59,7 +59,7 @@ class LoginController extends Controller
             ];
             try {
                 $user = $userRepository->createUserByGithub($githubUserData);
-                Auth::loginUsingId($user->id, true);
+                Auth::login($user, true);
             } catch (\Exception $e) {
                 abort(500, __("login.create_user_error"));
             }

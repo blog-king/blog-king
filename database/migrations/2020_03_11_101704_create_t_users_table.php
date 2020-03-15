@@ -15,7 +15,7 @@ class CreateTUsersTable extends Migration
     {
         Schema::create('t_users', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 16);
+            $table->string('name', 64);
             $table->string("email", 128)->nullable()->comment("邮箱");
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
@@ -40,6 +40,6 @@ class CreateTUsersTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('t_users');
     }
 }

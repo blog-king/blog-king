@@ -13,3 +13,5 @@ yarn-error.log
 .idea
 _ide_helper.php
 yarn.lock
+.env.testing
+public/apidoc
