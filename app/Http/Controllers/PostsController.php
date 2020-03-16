@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Http\Controllers;
-
 
 use App\Http\Requests\Post;
 use App\Models\Posts;
@@ -25,12 +23,11 @@ class PostsController extends Controller
     }
 
     /**
-     * 文章显示接口
-     * @param UserRepository $userRepository
-     * @param Request $request
-     * @param int $id
+     * 文章显示接口.
+     *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
+     *
      * @api {GET} /post/{id} 文章显示接口
      *
      * @apiSuccess {object[]} data 返回结果
@@ -51,7 +48,6 @@ class PostsController extends Controller
      * @apiSuccess {int} data.user.id 文章的用户id
      * @apiSuccess {string} data.user.name 文章的用户名字
      * @apiSuccess {string} data.user.avatar 文章的用户头像
-     *
      */
     public function show(UserRepository $userRepository, Request $request, int $id)
     {
@@ -78,11 +74,11 @@ class PostsController extends Controller
         //return $post;
     }
 
-
     /**
      * @apiGroup post
-     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
+     *
      * @api {GET} /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
@@ -105,11 +101,10 @@ class PostsController extends Controller
     {
         $request->validate([
             'target_id' => 'int',
-            'target_type' => 'in:' . PostRepository::TARGET_TYPE_USER . ',' . PostRepository::TARGET_TYPE_TAG,
+            'target_type' => 'in:'.PostRepository::TARGET_TYPE_USER.','.PostRepository::TARGET_TYPE_TAG,
             'limit' => 'int',
             'page' => 'int',
         ]);
-
 
         $targetType = $request->input('target_type');
         $targetId = $request->input('target_id');
@@ -121,13 +116,13 @@ class PostsController extends Controller
         $options = [
             'limit' => $limit,
             'page' => $page,
-            'user_id' => $userId
+            'user_id' => $userId,
         ];
 
         $data = $this->postRepository->getPosts($targetType, $targetId, $options);
 
         $result = [];
-        $resultPostKeys = ['id', 'title', 'description', 'updated_at', 'user_id', 'status', 'commented_count', 'liked_count', 'bookmarked_count', 'viewed_count',];
+        $resultPostKeys = ['id', 'title', 'description', 'updated_at', 'user_id', 'status', 'commented_count', 'liked_count', 'bookmarked_count', 'viewed_count'];
         foreach ($data['data'] as $datum) {
             $tmp = [];
             foreach ($resultPostKeys as $resultPostKey) {
@@ -135,17 +130,17 @@ class PostsController extends Controller
             }
             $result[] = $tmp;
         }
+
         return $this->buildReturnData(['list' => $result, 'next' => $data['next']]);
     }
 
-
     /**
-     * 创建文章接口
-     * @param RateLimiter $rateLimiter
-     * @param Post $request
+     * 创建文章接口.
+     *
      * @return \Illuminate\Http\JsonResponse
      *
      * @apiGroup post
+     *
      * @api {POST} /post 创建文章接口
      * @apiParam {string} title 文章标题
      * @apiParam {string} description  文章描述，如果不填则会使用文章内容去除html标签的前100个字符
@@ -170,7 +165,6 @@ class PostsController extends Controller
      * @apiSuccess {object[]} data.tags 文章的tag
      * @apiSuccess {int} data.tags.id tag的id
      * @apiSuccess {string} data.tags.name
-     *
      */
     public function create(RateLimiter $rateLimiter, Post $request)
     {
@@ -213,26 +207,23 @@ class PostsController extends Controller
                 $post = $this->postRepository->create($userId, $data, $tagIds);
                 $result = $this->buildReturnData($post);
             } catch (\Exception $e) {
-                Log::warning("create post error " . $e->getMessage());
+                Log::warning('create post error '.$e->getMessage());
                 $result = $this->buildReturn500(0, __('post.create_error'));
             }
         }
-        return $result;
 
+        return $result;
     }
 
-
     /**
-     * @param RateLimiter $rateLimiter
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
      * @throws
      *
      * @apiGroup post
+     *
      * @api {PATCH} /post/{$id} 文章更新
      * @apiSuccess {bool} success 是否成功
-     *
      */
     public function update(RateLimiter $rateLimiter, Request $request, int $id)
     {
@@ -253,7 +244,7 @@ class PostsController extends Controller
 
         $title = $request->input('title');
         //todo 检查是否包含当前的tag，是否捏造tagId
-        $tagIds = (array)array_filter(explode(',', $request->input('tag_ids')));
+        $tagIds = (array) array_filter(explode(',', $request->input('tag_ids')));
 
         //todo 需要过滤content 防止注入
         $content = $request->input('content');
@@ -263,6 +254,7 @@ class PostsController extends Controller
         try {
             $message = null;
             $result = ['success' => $this->postRepository->update($id, $userId, $data, $tagIds)];
+
             return $this->buildReturnData($result);
         } catch (\Exception $e) {
             $code = $e->getCode();
@@ -271,7 +263,7 @@ class PostsController extends Controller
             } elseif ($code == 403) {
                 $message = __('post.403_not_your_post');
             } else {
-                Log::warning("update post error " . $e->getMessage());
+                Log::warning('update post error '.$e->getMessage());
                 $message = __('post.500_update_post');
             }
             throw new HttpException($code, $message);
@@ -279,20 +271,21 @@ class PostsController extends Controller
     }
 
     /**
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
+     *
      * @throws
      *
      * @apiGroup post
+     *
      * @api {DELETE} /post/{$id} 文章删除
      * @apiSuccess {bool} success 是否成功
-     *
      */
     public function delete(int $id)
     {
         try {
             $userId = Auth::id();
             $result = ['success' => $this->postRepository->delete($id, $userId)];
+
             return $this->buildReturnData($result);
         } catch (\Exception $e) {
             $data = ['success' => false];
@@ -303,7 +296,7 @@ class PostsController extends Controller
             } elseif ($code === 403) {
                 $message = __('post.403_not_your_post');
             } else {
-                Log::warning('delete post error ' . $e->getMessage());
+                Log::warning('delete post error '.$e->getMessage());
                 $code = 500;
                 $message = __('post.500_delete_post');
             }

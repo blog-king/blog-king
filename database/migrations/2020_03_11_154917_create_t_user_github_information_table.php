@@ -15,15 +15,15 @@ class CreateTUserGithubInformationTable extends Migration
     {
         Schema::create('t_user_github_information', function (Blueprint $table) {
             $table->id();
-            $table->integer("user_id")->unsigned();
-            $table->integer("github_id")->default(0);
-            $table->string("name", 32)->unique();
-            $table->string("nickname", 32);
-            $table->string("email", 64)->nullable();
-            $table->string("location")->nullable();
+            $table->integer('user_id')->unsigned();
+            $table->integer('github_id')->default(0);
+            $table->string('name', 32)->unique();
+            $table->string('nickname', 32);
+            $table->string('email', 64)->nullable();
+            $table->string('location')->nullable();
             $table->timestamps();
             $table->index(['name'], 'idx_name');
-            $table->index(["user_id"], "idx_user_id");
+            $table->index(['user_id'], 'idx_user_id');
         });
     }
 

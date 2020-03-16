@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Repository\Repositories;
-
 
 use App\Models\UserGithubInformation;
 use App\Repository\Interfaces\UserInterface;
@@ -13,34 +11,29 @@ use Illuminate\Support\Str;
 
 class UserRepository implements UserInterface
 {
-
     /**
-     * 根据UserId 获取user 类
-     * @param int $id
-     * @return User|null
+     * 根据UserId 获取user 类.
      */
     public function getUserById(int $id): ?User
     {
-        $user = User::query()->where("id", "=", $id)->first();
+        $user = User::query()->where('id', '=', $id)->first();
         if ($user instanceof User) {
             return $user;
         }
+
         return null;
     }
 
-
     /**
-     * github登录的用户创建用户信息
+     * github登录的用户创建用户信息.
      *
      * @param array $githubUserData
-     *  eg：['name' => '名字'， "nickname" => "github昵称"， "email" => "github邮箱", "github_id" =>'', 'location'=>""]
+     *                              eg：['name' => '名字'， "nickname" => "github昵称"， "email" => "github邮箱", "github_id" =>'', 'location'=>""]
      *
-     * @return User
      * @throws \Exception
      */
     public function createUserByGithub(array $githubUserData): User
     {
-
         DB::beginTransaction();
         try {
             //创建新用户
@@ -70,18 +63,13 @@ class UserRepository implements UserInterface
             DB::rollBack();
             throw $e;
         }
-
     }
 
     /**
-     * 生成用户密码的规则
-     * @param string $name
-     * @param string $salt
-     * @return string
+     * 生成用户密码的规则.
      */
     private function generateUserPassword(string $name, string $salt): string
     {
-        return "kgin" . substr($name, 0, 3) . $salt ;
+        return 'kgin'.substr($name, 0, 3).$salt;
     }
-
 }

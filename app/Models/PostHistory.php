@@ -1,14 +1,11 @@
 <?php
 
-
 namespace App\Models;
-
 
 use Illuminate\Database\Eloquent\Model;
 
-
 /**
- * 文章发布历史
+ * 文章发布历史.
  *
  * @property int id
  * @property int post_id
@@ -16,7 +13,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property string content
  *
  * Class PostHistory
- * @package App\Models
  */
 class PostHistory extends Model
 {

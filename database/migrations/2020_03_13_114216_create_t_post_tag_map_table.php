@@ -15,8 +15,8 @@ class CreateTPostTagMapTable extends Migration
     {
         Schema::create('t_post_tag_map', function (Blueprint $table) {
             $table->id();
-            $table->integer("post_id");
-            $table->integer("tag_id");
+            $table->integer('post_id');
+            $table->integer('tag_id');
             $table->timestamps();
             $table->index(['tag_id', 'post_id'], 'idx_post_tag');
             $table->index('post_id', 'idx_post_id');

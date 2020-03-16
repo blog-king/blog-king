@@ -15,11 +15,11 @@ class CreateTPostHistoryTable extends Migration
     {
         Schema::create('t_post_history', function (Blueprint $table) {
             $table->id();
-            $table->integer('post_id')->unsigned()->comment("文章id");
-            $table->string("title");
-            $table->text("content");
+            $table->integer('post_id')->unsigned()->comment('文章id');
+            $table->string('title');
+            $table->text('content');
             $table->timestamp('created_at');
-            $table->index("post_id", "idx_post_id");
+            $table->index('post_id', 'idx_post_id');
         });
     }
 
