@@ -38,7 +38,7 @@ class PostRepository implements PostInterface
     {
         $collection = Posts::query()->with('tags')->whereIn('id', $ids)->get();
         $collection->each(function (Posts $post) {
-            if ($post->privacy == Posts::PRIVACY_PUBLIC) {
+            if (Posts::PRIVACY_PUBLIC == $post->privacy) {
                 Cache::add($this->genPostCacheKeyById($post->id), $post, 3600);
             }
         });
@@ -213,7 +213,7 @@ class PostRepository implements PostInterface
                     $i = 0;
                     /** @var Posts $post */
                     foreach ($posts as $post) {
-                        if ($post->user_id == $userId && ($post->privacy == Posts::PRIVACY_HIDDEN || $post->status == Posts::STATUS_DRAFT)) {
+                        if ($post->user_id == $userId && (Posts::PRIVACY_HIDDEN == $post->privacy || Posts::STATUS_DRAFT == $post->status)) {
                             continue;
                         }
                         if ($i == $limit) {

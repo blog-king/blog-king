@@ -53,7 +53,7 @@ class PostsController extends Controller
     {
         $userId = Auth::id();
         $post = $this->postRepository->getPostById($id);
-        if (!$post instanceof Posts || $post->privacy != Posts::PRIVACY_PUBLIC || $post->status != Posts::STATUS_PUBLISH) {
+        if (!$post instanceof Posts || Posts::PRIVACY_PUBLIC != $post->privacy || Posts::STATUS_PUBLISH != $post->status) {
             throw new NotFoundHttpException(__('post.404'));
         }
 
@@ -238,7 +238,7 @@ class PostsController extends Controller
 
         $privacy = $request->input('privacy');
         //只能由隐藏改成发布
-        if ($privacy && $privacy != Posts::PRIVACY_PUBLIC) {
+        if ($privacy && Posts::PRIVACY_PUBLIC != $privacy) {
             throw new HttpException(403, __('post.403_can_not_update_post_privacy'));
         }
 
@@ -258,9 +258,9 @@ class PostsController extends Controller
             return $this->buildReturnData($result);
         } catch (\Exception $e) {
             $code = $e->getCode();
-            if ($code === 404) {
+            if (404 === $code) {
                 $message = __('post.404');
-            } elseif ($code == 403) {
+            } elseif (403 == $code) {
                 $message = __('post.403_not_your_post');
             } else {
                 Log::warning('update post error '.$e->getMessage());
@@ -291,9 +291,9 @@ class PostsController extends Controller
             $data = ['success' => false];
             $code = $e->getCode();
 
-            if ($code === 404) {
+            if (404 === $code) {
                 $message = __('post.404');
-            } elseif ($code === 403) {
+            } elseif (403 === $code) {
                 $message = __('post.403_not_your_post');
             } else {
                 Log::warning('delete post error '.$e->getMessage());
