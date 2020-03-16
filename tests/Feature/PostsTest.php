@@ -84,7 +84,7 @@ class PostsTest extends TestCase
 
         //不是自己的文章不允许返回json
         $response = $this->actingAs($this->guestUser)->get(route('post-api-show', ['id' => $this->post->id]))->header('accept', 'application/json');
-        $this->assertTrue($response->getStatusCode() == 403);
+        $this->assertTrue(403 == $response->getStatusCode());
 
         $response = $this->actingAs($this->postOwnerUser)->get(route('post-api-show', ['id' => $this->post->id]), ['accept' => 'application/json']);
         $response->assertOk();
