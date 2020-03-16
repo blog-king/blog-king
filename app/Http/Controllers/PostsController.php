@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 
 
 use App\Http\Requests\Post;
-use App\Models\ObjectCount;
 use App\Models\Posts;
-use App\Repository\Repositories\ObjectCountRepository;
 use App\Repository\Repositories\PostRepository;
 use App\Repository\Repositories\UserRepository;
 use Illuminate\Cache\RateLimiter;
@@ -49,7 +47,7 @@ class PostsController extends Controller
      * @apiSuccess {string} data.bookmarked_count 收藏数
      * @apiSuccess {string} data.viewed_count 阅读数
      *
-     * @apiSuccess {object[]} data.user 文章的用户
+     * @apiSuccess {object} data.user 文章的用户
      * @apiSuccess {int} data.user.id 文章的用户id
      * @apiSuccess {string} data.user.name 文章的用户名字
      * @apiSuccess {string} data.user.avatar 文章的用户头像
