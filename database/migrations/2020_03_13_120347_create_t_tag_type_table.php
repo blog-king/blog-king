@@ -16,9 +16,9 @@ class CreateTTagTypeTable extends Migration
         Schema::create('t_tag_type', function (Blueprint $table) {
             $table->id();
             $table->string('name', 32);
-            $table->integer('level')->default(0)->comment("类型的级别");
-            $table->integer("parent_id")->nullable()->comment("tag的父类");
-            $table->timestamp("created_at");
+            $table->integer('level')->default(0)->comment('类型的级别');
+            $table->integer('parent_id')->nullable()->comment('tag的父类');
+            $table->timestamp('created_at');
         });
     }
 

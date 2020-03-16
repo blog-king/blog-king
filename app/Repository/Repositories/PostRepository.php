@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Repository\Repositories;
-
 
 use App\Http\Requests\Post;
 use App\Models\PostHistory;
@@ -13,36 +11,29 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use function foo\func;
 
 class PostRepository implements PostInterface
 {
-
     const TARGET_TYPE_TAG = 'tag'; //通过tag的方式获取列表
     const TARGET_TYPE_USER = 'user'; //通过userId的方式获取列表
 
-
     /**
-     * 通过postId 获取一个文章，并保存到缓存里面，缓存一个小时，因为都为静态数据，动态数据已经分离
-     * @param int $id
-     * @return Posts|null
+     * 通过postId 获取一个文章，并保存到缓存里面，缓存一个小时，因为都为静态数据，动态数据已经分离.
      */
     public function getPostById(int $id): ?Posts
     {
         $cacheKey = $this->genPostCacheKeyById($id);
+
         return Cache::remember($cacheKey, 3600, function () use ($id) {
             $data = Posts::query()->with('tags')->find($id);
             if ($data instanceof Posts) {
                 return $data;
             }
+
             return null;
         });
     }
 
-    /**
-     * @param array $ids
-     * @return Collection
-     */
     public function getPostsByIds(array $ids): Collection
     {
         $collection = Posts::query()->with('tags')->whereIn('id', $ids)->get();
@@ -51,17 +42,15 @@ class PostRepository implements PostInterface
                 Cache::add($this->genPostCacheKeyById($post->id), $post, 3600);
             }
         });
+
         return $collection;
     }
 
     /**
-     *
-     * @param int $user_id
      * @param array $data
-     *          eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
-     *                  'description' => ?, 'post_index' => ?],
-     * @param array $tagIds
-     * @return Posts|null
+     *                    eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
+     *                    'description' => ?, 'post_index' => ?],
+     *
      * @throws
      */
     public function create(int $user_id, array $data, array $tagIds = []): ?Posts
@@ -75,15 +64,14 @@ class PostRepository implements PostInterface
 
             if (!empty($tagIds)) {
                 $bulkInsetValues = [];
-                $now = date("Y-m-d H:i:s");
+                $now = date('Y-m-d H:i:s');
                 foreach ($tagIds as $tagId) {
                     $bulkInsetValues[] = ['post_id' => $post->id, 'tag_id' => $tagId, 'created_at' => $now];
                 }
                 //PostTagMap::query()->insert($bulkInsetValues);
-                DB::table("t_post_tag_map")->insert($bulkInsetValues);
+                DB::table('t_post_tag_map')->insert($bulkInsetValues);
             }
             DB::commit();
-
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
@@ -91,13 +79,9 @@ class PostRepository implements PostInterface
 
         //创建一篇文章后将缓存预热一次
         return $this->getPostById($post->id);
-
     }
 
     /**
-     * @param int $id
-     * @param int $userId
-     * @return bool
      * @throws \Exception
      */
     public function delete(int $id, int $userId): bool
@@ -107,24 +91,24 @@ class PostRepository implements PostInterface
             ->where('id', '=', $id)
             ->first();
         if (empty($post)) {
-            throw new \Exception("Not Found.", 404);
+            throw new \Exception('Not Found.', 404);
         }
 
         if ($post instanceof Posts && $post->user_id != $userId) {
-            throw new \Exception("FORBIDDEN.", 403);
+            throw new \Exception('FORBIDDEN.', 403);
         }
 
         $post->delete();
+
         return true;
     }
 
     /**
-     * 更新一个文章
-     * @param int $id
-     * @param int $userId
-     * @param array $data eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
+     * 更新一个文章.
+     *
+     * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
-     * @return bool
+     *
      * @throws \Exception
      */
     public function update(int $id, int $userId, array $data, array $tagIds): bool
@@ -135,14 +119,15 @@ class PostRepository implements PostInterface
             ->first();
 
         if (empty($post)) {
-            throw new \Exception("Not Found.", 404);
+            throw new \Exception('Not Found.', 404);
         }
 
         if ($post instanceof Posts && $post->user_id != $userId) {
-            throw new \Exception("FORBIDDEN.", 403);
+            throw new \Exception('FORBIDDEN.', 403);
         }
 
-        DB::beginTransaction();;
+        DB::beginTransaction();
+
         try {
             //将文章写入历史记录保存
             $postHistory = new PostHistory();
@@ -172,7 +157,7 @@ class PostRepository implements PostInterface
             });
             //处理添加的tag ,对比原来的tag id，如果不在原来的tagId的数组，则是新增的
             $addTagIds = [];
-            $now = date("Y-m-d H:i:s");
+            $now = date('Y-m-d H:i:s');
             foreach ($tagIds as $tagId) {
                 if (!in_array($tagId, $noEditTagIds)) {
                     $addTagIds[] = [
@@ -183,10 +168,11 @@ class PostRepository implements PostInterface
                 }
             }
             if (!empty($addTagIds)) {
-                DB::table("t_post_tag_map")->insert($addTagIds);
+                DB::table('t_post_tag_map')->insert($addTagIds);
             }
 
             DB::commit();
+
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -194,18 +180,16 @@ class PostRepository implements PostInterface
         }
     }
 
-
     /**
      * @param string $targetType eg: tag, user
-     * @param int $targetId
-     * @param array $options ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
+     * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
+     *
      * @return array ['data' => ['Posts', 'Posts'], 'next' => bool]
      *
      * @throws
      */
     public function getPosts(string $targetType, int $targetId, array $options = []): array
     {
-
         $limit = $options['limit'];
         $page = $options['page'];
         $next = true;
@@ -235,7 +219,7 @@ class PostRepository implements PostInterface
                         if ($i == $limit) {
                             break;
                         }
-                        $i += 1;
+                        ++$i;
                         $result[] = $post;
                     }
                     //拿够一页的数量则中断返回
@@ -257,29 +241,26 @@ class PostRepository implements PostInterface
                     ->get();
 
                 $result = [];
-                $posts->count() <= $limit  && $next = false;
+                $posts->count() <= $limit && $next = false;
                 $i = 0;
                 foreach ($posts as $post) {
                     $result[] = $post;
-                    $i++;
+                    ++$i;
                     if ($i >= $limit) {
                         break;
                     }
                 }
+
                 return ['data' => $result, 'next' => $next];
                 break;
         }
     }
 
-
     /**
-     * 情报缓存的key
-     * @param int $id
-     * @return string
+     * 情报缓存的key.
      */
     public function genPostCacheKeyById(int $id): string
     {
         return "post-id:{$id}";
     }
-
 }

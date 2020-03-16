@@ -5,13 +5,10 @@ namespace App\Listeners;
 use App\Events\PostDeleted;
 use App\Events\PostUpdated;
 use App\Repository\Repositories\PostRepository;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Cache;
 
 class PostDeleteCacheListener
 {
-
     private PostRepository $postRepository;
 
     public function __construct(PostRepository $postRepository)
@@ -23,6 +20,7 @@ class PostDeleteCacheListener
      * Handle the event.
      *
      * @param object $event
+     *
      * @return void
      */
     public function handle($event)

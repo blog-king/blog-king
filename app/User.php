@@ -17,26 +17,25 @@ use Illuminate\Notifications\Notifiable;
  * @property string avatar 头像
  * @property string introduction 个人简介
  * Class User
- * @package App
  */
 class User extends Authenticatable
 {
-
     use Notifiable;
 
-    const DEFAULT_AVATAR = "";
+    const DEFAULT_AVATAR = '';
 
     //登录方式为github登录
     const LOGIN_TYPE_GITHUB = 1;
 
-    protected $table = "t_users";
+    protected $table = 't_users';
 
     protected $hidden = ['password'];
 
     protected $visible = ['id', 'name', 'phone', 'sex', 'avatar', 'introduction'];
 
     /**
-     * 获取用户头像，如果用户头像没有设置则返回默认头像
+     * 获取用户头像，如果用户头像没有设置则返回默认头像.
+     *
      * @return mixed|string
      */
     public function getAvatarAttribute()
@@ -44,8 +43,9 @@ class User extends Authenticatable
         if (empty($this->attributes['avatar'])) {
             //return self::DEFAULT_AVATAR;
             //todo 临时使用外部头像地址
-            return "https://api.adorable.io/avatars/60/" . md5($this->attributes['name']) . ".png";
+            return 'https://api.adorable.io/avatars/60/'.md5($this->attributes['name']).'.png';
         }
+
         return $this->attributes['avatar'];
     }
 }

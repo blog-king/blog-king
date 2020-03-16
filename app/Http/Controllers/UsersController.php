@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Http\Controllers;
-
 
 use App\Repository\Repositories\PostRepository;
 use Illuminate\Http\Request;
@@ -13,6 +11,5 @@ class UsersController extends Controller
     public function postList(PostRepository $postRepository, Request $request)
     {
         $userId = Auth::id();
-
     }
 }

@@ -27,8 +27,8 @@ class Post extends FormRequest
         return [
             'content' => 'required',
             'title' => 'required',
-            'privacy' => 'required|in:' . Posts::PRIVACY_PUBLIC . "," . Posts::PRIVACY_HIDDEN,
-            'status' => 'required|in:' . Posts::STATUS_PUBLISH . "," . Posts::STATUS_DRAFT,
+            'privacy' => 'required|in:'.Posts::PRIVACY_PUBLIC.','.Posts::PRIVACY_HIDDEN,
+            'status' => 'required|in:'.Posts::STATUS_PUBLISH.','.Posts::STATUS_DRAFT,
         ];
     }
 }

@@ -12,15 +12,14 @@ use Laravel\Socialite\Facades\Socialite;
 
 class LoginController extends Controller
 {
-
     /**
-     * 第三方平台登录
-     * @param Request $request
+     * 第三方平台登录.
+     *
      * @return View | mixed
      */
     public function oauthRedirectToOtherPlatformProvider(Request $request)
     {
-        $platform = $request->input("platform");
+        $platform = $request->input('platform');
 
         if (Auth::check()) {
             return redirect(route('home'));
@@ -34,18 +33,15 @@ class LoginController extends Controller
         }
     }
 
-
     /**
+     * github登录，第一次登陆则创建新用户.
      *
-     * github登录，第一次登陆则创建新用户
-     * @param UserRepository $userRepository
-     * @param UserGithubInformationRepository $githubInformationRepository
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public function githubRedirectCallback(
-        UserRepository $userRepository, UserGithubInformationRepository $githubInformationRepository
-    )
-    {
+        UserRepository $userRepository,
+        UserGithubInformationRepository $githubInformationRepository
+    ) {
         $githubUser = Socialite::driver('github')->user();
         $githubId = $githubUser->getId();
         $userId = $githubInformationRepository->getUserIdById($githubId);
@@ -61,12 +57,13 @@ class LoginController extends Controller
                 $user = $userRepository->createUserByGithub($githubUserData);
                 Auth::login($user, true);
             } catch (\Exception $e) {
-                abort(500, __("login.create_user_error"));
+                abort(500, __('login.create_user_error'));
             }
         } else {
             Auth::loginUsingId($userId, true);
         }
-        return redirect(route("home"));
+
+        return redirect(route('home'));
     }
 
     public function logout()

@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Models;
-
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,12 +10,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property int tag_id
  *
  * Class PostTagMap
- * @package App\Models
  */
 class PostTagMap extends Model
 {
-
     protected $fillable = ['post_id', 'tag_id'];
 
-    protected $table = "t_post_tag_map";
+    protected $table = 't_post_tag_map';
 }

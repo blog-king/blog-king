@@ -15,9 +15,9 @@ class CreateTUserLoginLogsTable extends Migration
     {
         Schema::create('t_user_login_logs', function (Blueprint $table) {
             $table->id();
-            $table->integer("user_id", false, true);
+            $table->integer('user_id', false, true);
             $table->integer('ip');
-            $table->timestamp("created_at");
+            $table->timestamp('created_at');
         });
     }
 

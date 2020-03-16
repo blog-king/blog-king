@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Models;
-
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property int type_id
  *
  * Class Tags
- * @package App\Models
  */
 class Tags extends Model
 {

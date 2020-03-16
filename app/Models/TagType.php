@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Models;
-
 
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,7 +9,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property string name
  * @property int level
  * Class TagType
- * @package App\Models
  */
 class TagType extends Model
 {
