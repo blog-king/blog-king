@@ -3,3 +3,24 @@
   background: #343a40;
 }
 
+body {
+  position: relative;
+}
+
+.jumbotron {
+  background: none;
+}
+
+.banner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.banner .btn {
+  width: -webkit-max-content;
+  width: -moz-max-content;
+  width: max-content;
+}
+
