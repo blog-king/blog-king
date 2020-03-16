@@ -17,6 +17,7 @@ return PhpCsFixer\Config::create()
         'php_unit_construct' => true,
         'php_unit_strict' => true,
         'yoda_style' => true,
+        'no_superfluous_phpdoc_tags' => false,
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()
