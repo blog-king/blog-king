@@ -18,6 +18,7 @@ class CreateTPostsTable extends Migration
             $table->integer('user_id')->unsigned();
             $table->string('title')->comment('标题');
             $table->string('description')->comment('描述');
+            $table->string('thumbnail')->nullable()->comment('缩略图');
             $table->string('seo_words')->comment('用作于seo的词');
             $table->text('post_index')->nullable()->comment('文章目录');
             $table->text('content')->comment('内容');

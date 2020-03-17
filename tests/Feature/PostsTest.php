@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Posts;
 use App\Models\PostTagMap;
 use App\Models\Tags;
-use App\Models\TagType;
 use App\Repository\Repositories\PostRepository;
 use App\User;
 use Faker\Generator as Faker;
@@ -17,7 +16,7 @@ class PostsTest extends TestCase
 {
     use DatabaseMigrations;
 
-    private TagType $tagType;
+    private Tags $parentTag;
 
     private User $postOwnerUser; //文章创建者
     private User $guestUser; //游客一号
@@ -33,14 +32,13 @@ class PostsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        /** @var TagType $parentTagType */
-        $parentTagType = factory(TagType::class, 1)->create()->first();
-        $tagType = factory(TagType::class, 1)->create([
-            'parent_id' => $parentTagType->id,
-            'level' => $parentTagType->level + 1,
-        ])->first();
-        $this->tagType = $tagType;
+        /** @var Tags $grantParantTag */
+        $grantParantTag = factory(Tags::class, 1)->create()->first;
+        $parentTag = factory(Tags::class, 3)->create([
+            'parent_id' => $grantParantTag->id,
+            'level' => $grantParantTag->level + 1,
+        ]);
+        $this->parentTag = $parentTag->first();
 
         $users = factory(User::class, 4)->create();
         $this->postOwnerUser = $users[0];
@@ -55,7 +53,8 @@ class PostsTest extends TestCase
             'user_id' => $this->postOwnerUser->id,
         ])->each(function (Posts $posts) {
             $tags = factory(Tags::class, mt_rand(1, 3))->create([
-                'type_id' => $this->tagType,
+                'parent_id' => $this->parentTag->id,
+                'level' => $this->parentTag->level + 1,
             ]);
             $tags->each(function (Tags $tags) use ($posts) {
                 $postTagMap = new PostTagMap();
@@ -100,7 +99,7 @@ class PostsTest extends TestCase
      */
     public function testPostRepositoryForUpdate()
     {
-        $tags = factory(Tags::class, 3)->create(['type_id' => $this->tagType->id]);
+        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
         $tags->each(function (Tags $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
@@ -134,7 +133,7 @@ class PostsTest extends TestCase
 
     public function testApiForUpdate()
     {
-        $tags = factory(Tags::class, 3)->create(['type_id' => $this->tagType->id]);
+        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
         $tags->each(function (Tags $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
@@ -200,7 +199,7 @@ class PostsTest extends TestCase
 
     public function testApiForCreate()
     {
-        $tags = factory(Tags::class, 3)->create(['type_id' => $this->tagType->id]);
+        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
         $tags->each(function (Tags $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
@@ -296,10 +295,11 @@ class PostsTest extends TestCase
 
         $this->assertTrue($result->data->next);
         $this->assertSame(count($result->data->list), 5);
-        $post = (array) $result->data->list[0];
+        $post = (array)$result->data->list[0];
         $this->assertArrayHasKey('id', $post);
         $this->assertArrayHasKey('title', $post);
         $this->assertArrayHasKey('description', $post);
+        $this->assertArrayHasKey('thumbnail', $post);
         $this->assertArrayHasKey('user_id', $post);
         $this->assertArrayHasKey('status', $post);
         $this->assertArrayHasKey('commented_count', $post);

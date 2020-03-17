@@ -13,6 +13,8 @@ class UserRepository implements UserInterface
 {
     /**
      * 根据UserId 获取user 类.
+     * @param int $id
+     * @return User|null
      */
     public function getUserById(int $id): ?User
     {
@@ -30,6 +32,7 @@ class UserRepository implements UserInterface
      * @param array $githubUserData
      *                              eg：['name' => '名字'， "nickname" => "github昵称"， "email" => "github邮箱", "github_id" =>'', 'location'=>""]
      *
+     * @return User
      * @throws \Exception
      */
     public function createUserByGithub(array $githubUserData): User
@@ -41,6 +44,7 @@ class UserRepository implements UserInterface
             $salt = Str::random(16);
             $user = new User();
             $user->name = $githubUserData['name'];
+            $user->nickname = $githubUserData['nickname'];
             $user->login_type = User::LOGIN_TYPE_GITHUB;
             $user->password = Hash::make($this->generateUserPassword($githubUserData['name'], $salt));
             $user->password_salt = $salt;
@@ -67,6 +71,9 @@ class UserRepository implements UserInterface
 
     /**
      * 生成用户密码的规则.
+     * @param string $name
+     * @param string $salt
+     * @return string
      */
     private function generateUserPassword(string $name, string $salt): string
     {

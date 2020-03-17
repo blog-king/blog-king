@@ -15,6 +15,7 @@ class LoginController extends Controller
     /**
      * 第三方平台登录.
      *
+     * @param Request $request
      * @return View | mixed
      */
     public function oauthRedirectToOtherPlatformProvider(Request $request)

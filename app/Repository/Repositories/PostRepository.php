@@ -9,8 +9,10 @@ use App\Models\PostTagMap;
 use App\Repository\Interfaces\PostInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use function foo\func;
 
 class PostRepository implements PostInterface
 {
@@ -19,6 +21,8 @@ class PostRepository implements PostInterface
 
     /**
      * 通过postId 获取一个文章，并保存到缓存里面，缓存一个小时，因为都为静态数据，动态数据已经分离.
+     * @param int $id
+     * @return Posts|null
      */
     public function getPostById(int $id): ?Posts
     {
@@ -47,16 +51,20 @@ class PostRepository implements PostInterface
     }
 
     /**
+     * @param int $user_id
      * @param array $data
      *                    eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
      *                    'description' => ?, 'post_index' => ?],
      *
-     * @throws
+     * @param array $tagIds
+     * @return Posts|null
+     * @throws \Exception
+     * @throws \Throwable
      */
     public function create(int $user_id, array $data, array $tagIds = []): ?Posts
     {
-        DB::beginTransaction();
-        try {
+
+        $post = Model::resolveConnection()->transaction(function () use ($user_id, $data, $tagIds) {
             $post = new Posts();
             $post->fill($data);
             $post->user_id = $user_id;
@@ -71,17 +79,16 @@ class PostRepository implements PostInterface
                 //PostTagMap::query()->insert($bulkInsetValues);
                 DB::table('t_post_tag_map')->insert($bulkInsetValues);
             }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-
+            return $post;
+        });
         //创建一篇文章后将缓存预热一次
         return $this->getPostById($post->id);
     }
 
     /**
+     * @param int $id
+     * @param int $userId
+     * @return bool
      * @throws \Exception
      */
     public function delete(int $id, int $userId): bool
@@ -106,10 +113,14 @@ class PostRepository implements PostInterface
     /**
      * 更新一个文章.
      *
-     * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
+     * @param int $id
+     * @param int $userId
+     * @param array $data eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
      *
+     * @return bool
      * @throws \Exception
+     * @throws \Throwable
      */
     public function update(int $id, int $userId, array $data, array $tagIds): bool
     {
@@ -126,9 +137,7 @@ class PostRepository implements PostInterface
             throw new \Exception('FORBIDDEN.', 403);
         }
 
-        DB::beginTransaction();
-
-        try {
+        return Model::resolveConnection()->transaction(function () use ($id, $userId, $data, $tagIds, $post) {
             //将文章写入历史记录保存
             $postHistory = new PostHistory();
             $postHistory->post_id = $post->id;
@@ -170,23 +179,17 @@ class PostRepository implements PostInterface
             if (!empty($addTagIds)) {
                 DB::table('t_post_tag_map')->insert($addTagIds);
             }
-
-            DB::commit();
-
             return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
      * @param string $targetType eg: tag, user
-     * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
+     * @param int $targetId
+     * @param array $options ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
      *
      * @return array ['data' => ['Posts', 'Posts'], 'next' => bool]
      *
-     * @throws
      */
     public function getPosts(string $targetType, int $targetId, array $options = []): array
     {
@@ -258,6 +261,8 @@ class PostRepository implements PostInterface
 
     /**
      * 情报缓存的key.
+     * @param int $id
+     * @return string
      */
     public function genPostCacheKeyById(int $id): string
     {

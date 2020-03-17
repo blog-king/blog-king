@@ -16,6 +16,7 @@ class CreateTUsersTable extends Migration
         Schema::create('t_users', function (Blueprint $table) {
             $table->id();
             $table->string('name', 64);
+            $table->string('nickname', 64);
             $table->string('email', 128)->nullable()->comment('邮箱');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
@@ -28,6 +29,7 @@ class CreateTUsersTable extends Migration
             $table->tinyInteger('login_type')->default(0)->comment('0为不使用第三方账号登录，1为github登录');
             $table->string('avatar')->nullable()->comment('头像');
             $table->text('introduction')->nullable()->comment('个人简介');
+            $table->json('carousel')->nullable()->comment("轮播图+跳转地址");
 
             $table->timestamps();
         });

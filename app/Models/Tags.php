@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property int id
  * @property string name
- * @property int type_id
+ * @property int level 层级
+ * @property int parent_id 父类id
  *
  * Class Tags
  */

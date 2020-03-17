@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int user_id
  * @property string title 标题
  * @property string description 描述
+ * @property string thumbnail 缩略图
  * @property string seo_words 用作于seo的词
  * @property string post_index 文章目录
  * @property string content 内容
@@ -41,10 +42,10 @@ class Posts extends Model
 
     //protected $appends = ['tags'];
 
-    protected $fillable = ['user_id', 'title', 'description', 'seo_words', 'post_index', 'content', 'status', 'privacy'];
+    protected $fillable = ['user_id', 'title', 'description', 'seo_words', 'post_index', 'content', 'status', 'privacy', 'thumbnail'];
 
-    protected $visible = ['id', 'user_id', 'title', 'description', 'seo_words', 'post_index', 'content', 'status', 'commented_count',
-                          'liked_count', 'bookmarked_count', 'viewed_count', 'updated_at', 'tags', 'user', ];
+    protected $visible = ['id', 'user_id', 'title', 'description', 'thumbnail', 'seo_words', 'post_index', 'content', 'status', 'commented_count',
+                          'liked_count', 'bookmarked_count', 'viewed_count', 'updated_at', 'tags', 'user',];
 
     protected $dispatchesEvents = [
         'updated' => PostUpdated::class,
@@ -68,5 +69,16 @@ class Posts extends Model
         }
 
         return json_decode($this->attributes['post_index'], true);
+    }
+
+
+    public function getThumbnailAttribute()
+    {
+        if (empty($this->attributes['thumbnail'])) {
+            //todo 临时使用外部图片地址
+            return 'https://api.adorable.io/avatars/150/'.md5($this->attributes['id']).'.png';
+        }
+
+        return $this->attributes['thumbnail'];
     }
 }
