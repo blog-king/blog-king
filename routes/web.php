@@ -20,3 +20,5 @@ Route::get('oauth/github/callback', 'LoginController@githubRedirectCallback'); /
 
 // todo: 后面要改成 {name}.{domain} 子域名形式
 Route::get('blog/{name}', 'BlogController@homepage')->name('blog');
+
+Route::get('user/{name}', 'UserController@user')->name('user');

@@ -29,15 +29,15 @@
             </ul>
 
             <ul class="navbar-nav mr-right">
-                @if ($user = auth()->user())
+                @if ($self = auth()->user())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            {{ $user->name }}
+                            {{ $self->name }}
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <a class="dropdown-item" href="#">个人中心</a>
-                            <a class="dropdown-item" href="{{ route('blog', ['name'=>$user->name]) }}">我的博客</a>
+                            <a class="dropdown-item" href="{{ route('user', ['name'=>$self->name]) }}">个人中心</a>
+                            <a class="dropdown-item" href="{{ route('blog', ['name'=>$self->name]) }}">我的博客</a>
                             <a class="dropdown-item" href="#">我的收藏</a>
                             <div class="dropdown-divider"></div>
                             <form action="{{ route('logout') }}" method="post">
@@ -59,7 +59,6 @@
 
 <main role="main" id="main" class="flex-shrink-0">
     @yield('content')
-
 </main>
 
 @yield('footer')

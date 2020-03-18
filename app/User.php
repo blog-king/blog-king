@@ -48,4 +48,9 @@ class User extends Authenticatable
 
         return $this->attributes['avatar'];
     }
+
+    public function getIntroductionAttribute()
+    {
+        return $this->attributes['introduction'] ?? '这个家伙很懒~';
+    }
 }

@@ -2,5 +2,7 @@
     "/js/app.js": "/js/app.js",
     "/css/layout.css": "/css/layout.css",
     "/css/blog.css": "/css/blog.css",
-    "/css/app.css": "/css/app.css"
+    "/css/app.css": "/css/app.css",
+    "/css/user.css": "/css/user.css",
+    "/js/user.js": "/js/user.js"
 }

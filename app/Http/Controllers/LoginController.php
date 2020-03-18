@@ -14,6 +14,7 @@ class LoginController extends Controller
 {
     /**
      * 第三方平台登录.
+     *
      * @return View | mixed
      */
     public function oauthRedirectToOtherPlatformProvider(Request $request)
@@ -24,7 +25,7 @@ class LoginController extends Controller
         session()->put('login-redirect', $request->header('referer'));
 
         if (Auth::check()) {
-            return redirect(route('home'));
+            return redirect()->back();
         }
 
         switch ($platform) {
@@ -37,6 +38,7 @@ class LoginController extends Controller
 
     /**
      * github登录，第一次登陆则创建新用户.
+     *
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public function githubRedirectCallback(
