@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Http\Controllers;
-
 
 use App\Models\Tags;
 use App\Repository\Repositories\TagRepository;
@@ -10,19 +8,22 @@ use Illuminate\Http\Request;
 
 class TagsController extends Controller
 {
-
     /**
-     * 根据tagIds获取tag
+     * 根据tagIds获取tag.
+     *
      * @apiGroup tag
+     *
      * @param TagRepository $tagRepository
-     * @param Request $request
+     * @param Request       $request
+     *
      * @return \Illuminate\Http\JsonResponse
+     *
      * @api {GET} /tags 通过tagId 获取tag
      * @apiParam {string} tag_ids 用英文逗号隔开
      * @apiSuccess {object[]} data 返回结果集
-     * @apiSuccess {object[]} data.id tag的id
-     * @apiSuccess {object[]} data.name tag的名字
-     *
+     * @apiSuccess {int} data.id tag的id
+     * @apiSuccess {string} data.name tag的名字
+     * @apiSuccess {object[]} data.children tag的子类，结构同上，id,name
      */
     public function getTagsByIds(TagRepository $tagRepository, Request $request)
     {
@@ -31,16 +32,20 @@ class TagsController extends Controller
         if (!empty($tagIds)) {
             $tags = $tagRepository->getTagByIds($tagIds);
         }
+
         return $this->buildReturnData($tags);
     }
 
-
     /**
-     * 获取tag分类和tag
+     * 获取tag分类和tag.
+     *
      * @apiGroup tag
+     *
      * @param TagRepository $tagRepository
-     * @param Request $request
+     * @param Request       $request
+     *
      * @return \Illuminate\Http\JsonResponse
+     *
      * @api {GET} /tags
      *
      * @apiParam {int} parent_id tag的父类id，默认不传则返回第一第二层tag
@@ -51,7 +56,7 @@ class TagsController extends Controller
      */
     public function tags(TagRepository $tagRepository, Request $request)
     {
-        $parentId = (int)$request->input('parent_id');
+        $parentId = (int) $request->input('parent_id');
         if (empty($parentId)) {
             //开始组装叠层
             $tags = $tagRepository->getLevel0andLevel();
@@ -82,6 +87,7 @@ class TagsController extends Controller
                 $tag['children'] = [];
             }
         }
+
         return $this->buildReturnData($result);
     }
 }

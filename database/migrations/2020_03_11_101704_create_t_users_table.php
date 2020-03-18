@@ -25,11 +25,11 @@ class CreateTUsersTable extends Migration
             //phone 用上default 默认值，为了更方便索引的建立与查询，利用string，方便输入区号+86等，方便like查询，没有人会用电话号码做数学运算
             $table->string('phone', 20)->default('')->comment('电话');
 
-            $table->tinyInteger('sex')->default(2)->comment('0为女， 1为男，2未设定');
+            $table->tinyInteger('gender')->default(2)->comment('0为女， 1为男，2未设定');
             $table->tinyInteger('login_type')->default(0)->comment('0为不使用第三方账号登录，1为github登录');
             $table->string('avatar')->nullable()->comment('头像');
             $table->text('introduction')->nullable()->comment('个人简介');
-            $table->json('carousel')->nullable()->comment("轮播图+跳转地址");
+            $table->json('carousel')->nullable()->comment('轮播图+跳转地址');
 
             $table->timestamps();
         });

@@ -9,12 +9,12 @@ use Illuminate\Notifications\Notifiable;
  * @property int id
  * @property string name
  * @property string nickname
- * @property string carousel //轮播图，json，图片地址 + 跳转地址 cover[可为空，默认用颜色处理]、title、description、action
+ * @property array carousel //轮播图，json，图片地址 + 跳转地址 cover[可为空，默认用颜色处理]、title、description、action
  * @property string password
  * @property string password_salt
  * @property string email
  * @property string phone
- * @property int sex 0为女， 1为男，2未设定
+ * @property int gender 0为女， 1为男，2未设定
  * @property int login_type 0为不使用第三方账号登录，1为github登录
  * @property string avatar 头像
  * @property string introduction 个人简介
@@ -35,9 +35,12 @@ class User extends Authenticatable
 
     protected $visible = ['id', 'name', 'nickname', 'phone', 'sex', 'avatar', 'introduction', 'carousel'];
 
+    protected $casts = [
+        'carousel' => 'array',
+    ];
+
     /**
      * 获取用户头像，如果用户头像没有设置则返回默认头像.
-     *
      * @return mixed|string
      */
     public function getAvatarAttribute()

@@ -89,7 +89,7 @@ class PostsController extends Controller
      * @apiParam {int} limit 限制多少页
      * @apiParam {int} page 第几页，默认第一页开始
      *
-     * @apiSuccess {object[]} 文章列表对象
+     * @apiSuccess {object[]} list 文章列表对象
      * @apiSuccess {int} list.id 文章的id
      * @apiSuccess {string} list.title 文章的title
      * @apiSuccess {description} list.description 文章的描述
@@ -149,6 +149,7 @@ class PostsController extends Controller
      *
      * @apiGroup post
      *
+     * @throws \Throwable
      * @api {POST} /post 创建文章接口
      * @apiParam {string} title 文章标题
      * @apiParam {string} description  文章描述，如果不填则会使用文章内容去除html标签的前100个字符
@@ -231,6 +232,7 @@ class PostsController extends Controller
      *
      * @apiGroup post
      *
+     * @throws \Throwable
      * @api {PATCH} /post/{$id} 文章更新
      * @apiParam {string} title 标题，可不传
      * @apiParam {int} privacy 权限，只能由隐私改成公开， 2 ==> 1, 否则会403异常
