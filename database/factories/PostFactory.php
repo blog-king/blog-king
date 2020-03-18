@@ -7,6 +7,7 @@ $factory->define(\App\Models\Posts::class, function (Faker $faker) {
         'title' => $faker->sentence[0],
         'content' => $faker->randomHtml(),
         'description' => $faker->shuffleString(),
+        'thumbnail' => $faker->imageUrl(150, 150),
         'seo_words' => implode(',', $faker->words()),
     ];
 });

@@ -8,6 +8,8 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @property int id
  * @property string name
+ * @property string nickname
+ * @property string carousel //轮播图，json，图片地址 + 跳转地址 cover[可为空，默认用颜色处理]、title、description、action
  * @property string password
  * @property string password_salt
  * @property string email
@@ -31,7 +33,7 @@ class User extends Authenticatable
 
     protected $hidden = ['password'];
 
-    protected $visible = ['id', 'name', 'phone', 'sex', 'avatar', 'introduction'];
+    protected $visible = ['id', 'name', 'nickname', 'phone', 'sex', 'avatar', 'introduction', 'carousel'];
 
     /**
      * 获取用户头像，如果用户头像没有设置则返回默认头像.

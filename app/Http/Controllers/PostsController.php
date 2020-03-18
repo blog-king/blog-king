@@ -25,6 +25,9 @@ class PostsController extends Controller
     /**
      * 文章显示接口.
      *
+     * @param UserRepository $userRepository
+     * @param Request $request
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
      *
@@ -77,6 +80,7 @@ class PostsController extends Controller
     /**
      * @apiGroup post
      *
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      *
      * @api {GET} /posts 文章列表api
@@ -85,9 +89,11 @@ class PostsController extends Controller
      * @apiParam {int} limit 限制多少页
      * @apiParam {int} page 第几页，默认第一页开始
      *
+     * @apiSuccess {object[]} 文章列表对象
      * @apiSuccess {int} list.id 文章的id
      * @apiSuccess {string} list.title 文章的title
      * @apiSuccess {description} list.description 文章的描述
+     * @apiSuccess {description} list.thumbnail 文章的缩略图
      * @apiSuccess {int} list.user_id 文章的用户id
      * @apiSuccess {int} list.status 文章的类型，1为发布，2为草稿
      * @apiSuccess {string} list.commented_count 评论数
@@ -122,7 +128,7 @@ class PostsController extends Controller
         $data = $this->postRepository->getPosts($targetType, $targetId, $options);
 
         $result = [];
-        $resultPostKeys = ['id', 'title', 'description', 'updated_at', 'user_id', 'status', 'commented_count', 'liked_count', 'bookmarked_count', 'viewed_count'];
+        $resultPostKeys = ['id', 'title', 'description', 'thumbnail',  'updated_at', 'user_id', 'status', 'commented_count', 'liked_count', 'bookmarked_count', 'viewed_count'];
         foreach ($data['data'] as $datum) {
             $tmp = [];
             foreach ($resultPostKeys as $resultPostKey) {
@@ -137,6 +143,8 @@ class PostsController extends Controller
     /**
      * 创建文章接口.
      *
+     * @param RateLimiter $rateLimiter 频率限制类
+     * @param Post $request 情报请求过滤
      * @return \Illuminate\Http\JsonResponse
      *
      * @apiGroup post
@@ -216,13 +224,20 @@ class PostsController extends Controller
     }
 
     /**
+     * @param RateLimiter $rateLimiter 频率限制
+     * @param Request $request 请求
+     * @param int $id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @throws
      *
      * @apiGroup post
      *
      * @api {PATCH} /post/{$id} 文章更新
+     * @apiParam {string} title 标题，可不传
+     * @apiParam {int} privacy 权限，只能由隐私改成公开， 2 ==> 1, 否则会403异常
+     * @apiParam {string} content 内容，必须字段
+     * @apiParam {string} post_index 文章目录，可不传
+     * @apiParam {string} tag_ids 文章关联的tag_ids,英文逗号隔开，必须字段
+     *
      * @apiSuccess {bool} success 是否成功
      */
     public function update(RateLimiter $rateLimiter, Request $request, int $id)
@@ -271,9 +286,8 @@ class PostsController extends Controller
     }
 
     /**
+     * @param int $id 文章的id
      * @return \Illuminate\Http\JsonResponse
-     *
-     * @throws
      *
      * @apiGroup post
      *

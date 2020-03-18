@@ -16,9 +16,10 @@ class CreateTTagsTable extends Migration
         Schema::create('t_tags', function (Blueprint $table) {
             $table->id();
             $table->string('name', 32);
-            $table->integer('type_id')->unsigned()->comment('tag的类型id');
+            $table->integer('level')->default(0)->comment('层级关系，第几层');
+            $table->integer('parent_id')->default(0)->comment('tag的父类id,默认第一层为0');
             $table->timestamps();
-            $table->index('type_id', 'idx_type_id');
+            $table->index(['parent_id', 'level'], 'idx_parent_level');
         });
     }
 
