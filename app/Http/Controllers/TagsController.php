@@ -20,8 +20,9 @@ class TagsController extends Controller
      * @api {GET} /tags 通过tagId 获取tag
      * @apiParam {string} tag_ids 用英文逗号隔开
      * @apiSuccess {object[]} data 返回结果集
-     * @apiSuccess {object[]} data.id tag的id
-     * @apiSuccess {object[]} data.name tag的名字
+     * @apiSuccess {int} data.id tag的id
+     * @apiSuccess {string} data.name tag的名字
+     * @apiSuccess {object[]} data.children tag的子类，结构同上，id,name
      *
      */
     public function getTagsByIds(TagRepository $tagRepository, Request $request)
