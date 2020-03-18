@@ -12,8 +12,13 @@ interface TagInterface
     /**
      * * 获取一大类tag
      * @param int $parent_id
-     * @param int $level
      * @return Collection
      */
-    public function getTagsByParentId(int $parent_id, int $level) : Collection;
+    public function getTagsByParentId(int $parent_id) : Collection;
+
+    /**
+     * 获取第一第二层分类的tag
+     * @return Collection
+     */
+    public function getLevel0andLevel():Collection;
 }
