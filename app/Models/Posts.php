@@ -45,7 +45,7 @@ class Posts extends Model
     protected $fillable = ['user_id', 'title', 'description', 'seo_words', 'post_index', 'content', 'status', 'privacy', 'thumbnail'];
 
     protected $visible = ['id', 'user_id', 'title', 'description', 'thumbnail', 'seo_words', 'post_index', 'content', 'status', 'commented_count',
-                          'liked_count', 'bookmarked_count', 'viewed_count', 'updated_at', 'tags', 'user',];
+                          'liked_count', 'bookmarked_count', 'viewed_count', 'updated_at', 'tags', 'user', ];
 
     protected $dispatchesEvents = [
         'updated' => PostUpdated::class,
@@ -70,7 +70,6 @@ class Posts extends Model
 
         return json_decode($this->attributes['post_index'], true);
     }
-
 
     public function getThumbnailAttribute()
     {

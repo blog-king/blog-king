@@ -8,7 +8,9 @@ interface UserInterface
 {
     /**
      * 根据UserId 获取user.
+     *
      * @param int $id
+     *
      * @return User|null
      */
     public function getUserById(int $id): ?User;
@@ -17,6 +19,7 @@ interface UserInterface
      * github登录的用户创建.
      *
      * @param array $githubUserData
+     *
      * @return User
      */
     public function createUserByGithub(array $githubUserData): User;

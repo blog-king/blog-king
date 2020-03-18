@@ -41,6 +41,7 @@ class User extends Authenticatable
 
     /**
      * 获取用户头像，如果用户头像没有设置则返回默认头像.
+     *
      * @return mixed|string
      */
     public function getAvatarAttribute()

@@ -4,13 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Tags;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class TagsTest extends TestCase
 {
-
     use DatabaseMigrations;
 
     /**
@@ -24,7 +21,7 @@ class TagsTest extends TestCase
         $childTagCount = 10;
         factory(Tags::class, 1)->create(['name' => 'Painting'])->each(function (Tags $tag) use ($parentTagCount, $childTagCount) {
             factory(Tags::class, $parentTagCount)->create([
-                'name' => 'color' . $tag->id,
+                'name' => 'color'.$tag->id,
                 'parent_id' => $tag->id,
                 'level' => $tag->level + 1,
             ])->each(function (Tags $childTag) use ($childTagCount) {
@@ -42,7 +39,7 @@ class TagsTest extends TestCase
         $this->assertArrayHasKey('name', $tag);
         $this->assertArrayHasKey('children', $tag);
         $this->assertIsArray($tag['children']);
-        $this->assertEquals($parentTagCount, count($tag['children']));
+        $this->assertSame($parentTagCount, count($tag['children']));
 
         //第二层的第一个parentId
         $parentTagId = $tag['children'][0]['id'];
@@ -52,7 +49,6 @@ class TagsTest extends TestCase
         $tag = $content[0];
         $this->assertArrayHasKey('id', $tag);
         $this->assertArrayHasKey('name', $tag);
-        $this->assertEquals($childTagCount, count($content));
+        $this->assertSame($childTagCount, count($content));
     }
-
 }

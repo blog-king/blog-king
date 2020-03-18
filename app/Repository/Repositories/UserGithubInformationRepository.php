@@ -9,7 +9,9 @@ class UserGithubInformationRepository implements UserGithubInformationInterface
 {
     /**
      * 根据github的name获取是否已经使用过github登录.
+     *
      * @param string $name
+     *
      * @return int
      */
     public function getUserIdByName(string $name): int
@@ -28,7 +30,9 @@ class UserGithubInformationRepository implements UserGithubInformationInterface
 
     /**
      * 根据github的id获取是否已经使用过github登录.
+     *
      * @param int $id
+     *
      * @return int
      */
     public function getUserIdById(int $id): int

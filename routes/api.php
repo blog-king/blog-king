@@ -23,6 +23,5 @@ Route::group(['middleware' => ['auth']], function () {
 Route::get('post/{id}', 'PostsController@show')->name('post-api-show'); //查看文章
 Route::get('posts', 'PostsController@postsList')->name('post-api-list'); //查看文章列表
 
-
 //tags
 Route::get('tags', 'TagsController@tags')->name('tags-api-list'); //获取tags

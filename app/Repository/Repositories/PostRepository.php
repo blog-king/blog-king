@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use function foo\func;
 
 class PostRepository implements PostInterface
 {
@@ -21,7 +20,9 @@ class PostRepository implements PostInterface
 
     /**
      * 通过postId 获取一个文章，并保存到缓存里面，缓存一个小时，因为都为静态数据，动态数据已经分离.
+     *
      * @param int $id
+     *
      * @return Posts|null
      */
     public function getPostById(int $id): ?Posts
@@ -51,19 +52,19 @@ class PostRepository implements PostInterface
     }
 
     /**
-     * @param int $user_id
+     * @param int   $user_id
      * @param array $data
-     *                    eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
-     *                    'description' => ?, 'post_index' => ?],
-     *
+     *                       eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
+     *                       'description' => ?, 'post_index' => ?],
      * @param array $tagIds
+     *
      * @return Posts|null
+     *
      * @throws \Exception
      * @throws \Throwable
      */
     public function create(int $user_id, array $data, array $tagIds = []): ?Posts
     {
-
         $post = Model::resolveConnection()->transaction(function () use ($user_id, $data, $tagIds) {
             $post = new Posts();
             $post->fill($data);
@@ -79,6 +80,7 @@ class PostRepository implements PostInterface
                 //PostTagMap::query()->insert($bulkInsetValues);
                 DB::table('t_post_tag_map')->insert($bulkInsetValues);
             }
+
             return $post;
         });
         //创建一篇文章后将缓存预热一次
@@ -88,7 +90,9 @@ class PostRepository implements PostInterface
     /**
      * @param int $id
      * @param int $userId
+     *
      * @return bool
+     *
      * @throws \Exception
      */
     public function delete(int $id, int $userId): bool
@@ -113,12 +117,13 @@ class PostRepository implements PostInterface
     /**
      * 更新一个文章.
      *
-     * @param int $id
-     * @param int $userId
-     * @param array $data eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
+     * @param int   $id
+     * @param int   $userId
+     * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
      *
      * @return bool
+     *
      * @throws \Exception
      * @throws \Throwable
      */
@@ -179,17 +184,17 @@ class PostRepository implements PostInterface
             if (!empty($addTagIds)) {
                 DB::table('t_post_tag_map')->insert($addTagIds);
             }
+
             return true;
         });
     }
 
     /**
      * @param string $targetType eg: tag, user
-     * @param int $targetId
-     * @param array $options ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
+     * @param int    $targetId
+     * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
      *
      * @return array ['data' => ['Posts', 'Posts'], 'next' => bool]
-     *
      */
     public function getPosts(string $targetType, int $targetId, array $options = []): array
     {
@@ -261,7 +266,9 @@ class PostRepository implements PostInterface
 
     /**
      * 情报缓存的key.
+     *
      * @param int $id
+     *
      * @return string
      */
     public function genPostCacheKeyById(int $id): string
