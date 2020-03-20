@@ -59,5 +59,4 @@ class User extends Authenticatable
     {
         return $this->attributes['introduction'] ?? '这个家伙很懒~';
     }
-
 }
