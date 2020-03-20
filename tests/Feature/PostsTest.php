@@ -162,8 +162,7 @@ class PostsTest extends TestCase
         $rateLimit->resetAttempts($postRateLimitKey);
 
         //ok
-        $response = $this->actingAs($this->postOwnerUser)
-            ->patch(route('post-api-update', ['id' => $this->post->id]), $data);
+        $response = $this->actingAs($this->postOwnerUser)->patch(route('post-api-update', ['id' => $this->post->id]), $data);
         $response->assertOk();
         $result = json_decode($response->content(), true);
         $this->assertTrue($result['data']['success']);

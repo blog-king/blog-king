@@ -49,7 +49,7 @@ class User extends Authenticatable
         if (empty($this->attributes['avatar'])) {
             //return self::DEFAULT_AVATAR;
             //todo 临时使用外部头像地址
-            return 'https://api.adorable.io/avatars/60/'.md5($this->attributes['name']).'.png';
+            return 'https://api.adorable.io/avatars/108/'.md5($this->attributes['name']).'.png';
         }
 
         return $this->attributes['avatar'];
@@ -59,4 +59,5 @@ class User extends Authenticatable
     {
         return $this->attributes['introduction'] ?? '这个家伙很懒~';
     }
+
 }

@@ -1,9 +1,29 @@
 @import "config";
 
+$avatarSize: 104;
+
 #main {
   background: rgb(240, 242, 245);
 }
 
 .user-module {
   background: #fff;
+}
+
+#user-header {
+}
+
+.line {
+  margin: 10px auto;
+  width: 90%;
+  border-bottom: 1px #ccc dashed;
+}
+
+#user-avatar {
+  width: $avatarSize px;
+  height: $avatarSize px;
+}
+
+.nothing {
+  color: #aaa;
 }
