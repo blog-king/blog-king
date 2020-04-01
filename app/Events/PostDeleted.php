@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Posts;
+use App\Models\Post;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -14,12 +14,12 @@ class PostDeleted
     use InteractsWithSockets;
     use SerializesModels;
 
-    private Posts $post;
+    private Post $post;
 
     /**
      * PostDeleted constructor.
      */
-    public function __construct(Posts $post)
+    public function __construct(Post $post)
     {
         $this->post = $post;
     }

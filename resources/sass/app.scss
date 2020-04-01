@@ -1,2 +1,21 @@
 @import "config";
-@import "navbar";
+
+body {
+  position: relative;
+}
+
+.jumbotron {
+  background: none;
+}
+
+.banner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.banner .btn {
+  width: max-content;
+}
+

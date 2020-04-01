@@ -17,3 +17,10 @@ Route::get('/', 'HomeController@home')->name('home'); //首页
 Route::get('login', 'LoginController@oauthRedirectToOtherPlatformProvider')->name('login'); //登录
 Route::post('logout', 'LoginController@logout')->name('logout');
 Route::get('oauth/github/callback', 'LoginController@githubRedirectCallback'); //github登录回调地址
+
+// todo: 后面要改成 {name}.{domain} 子域名形式
+Route::get('blog/{name}', 'BlogController@homepage')->name('blog');
+
+Route::get('user', 'UserController@user')->name('user');
+
+Route::post('create', 'UserController@user')->name('user');

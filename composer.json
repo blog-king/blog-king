@@ -40,7 +40,7 @@
             "pre-commit": [
                 "echo committing as $(git config user.name)",
                 "vendor/bin/php-cs-fixer fix .",
-                "vendor/bin/phpunit"
+                "php artisan test"
             ]
         }
     },

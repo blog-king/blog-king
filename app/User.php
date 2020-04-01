@@ -2,21 +2,25 @@
 
 namespace App;
 
+use App\Models\Post;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * @property int id
- * @property string name
- * @property string password
- * @property string password_salt
- * @property string email
- * @property string phone
- * @property int sex 0为女， 1为男，2未设定
- * @property int login_type 0为不使用第三方账号登录，1为github登录
- * @property string avatar 头像
- * @property string introduction 个人简介
- * Class User
+ * App\User.
+ *
+ * @property mixed|string                                                                                              $avatar
+ * @property mixed                                                                                                     $introduction
+ * @property mixed                                                                                                     $title
+ * @property \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
+ * @property int|null                                                                                                  $notifications_count
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Post[]                                               $posts
+ * @property int|null                                                                                                  $posts_count
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\User newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\User newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|\App\User query()
+ * @mixin \Eloquent
  */
 class User extends Authenticatable
 {
@@ -31,7 +35,11 @@ class User extends Authenticatable
 
     protected $hidden = ['password'];
 
-    protected $visible = ['id', 'name', 'phone', 'sex', 'avatar', 'introduction'];
+    protected $visible = ['id', 'name', 'nickname', 'phone', 'sex', 'avatar', 'introduction', 'carousel'];
+
+    protected $casts = [
+        'carousel' => 'array',
+    ];
 
     /**
      * 获取用户头像，如果用户头像没有设置则返回默认头像.
@@ -43,9 +51,27 @@ class User extends Authenticatable
         if (empty($this->attributes['avatar'])) {
             //return self::DEFAULT_AVATAR;
             //todo 临时使用外部头像地址
-            return 'https://api.adorable.io/avatars/60/'.md5($this->attributes['name']).'.png';
+            return 'https://api.adorable.io/avatars/108/'.md5($this->attributes['name']).'.png';
         }
 
         return $this->attributes['avatar'];
+    }
+
+    public function getIntroductionAttribute()
+    {
+        return $this->attributes['introduction'] ?? '这个家伙很懒~';
+    }
+
+    public function getTitleAttribute()
+    {
+        return $this->attributes['title'] ?? $this->attributes['name'];
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany|Post
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
     }
 }

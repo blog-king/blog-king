@@ -17,3 +17,12 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->describe('Display an inspiring quote');
+
+Artisan::command('post:seed', function () {
+    // todo: 提交之前删掉
+    $user = \App\User::query()->firstOrFail();
+
+    dd(factory(\App\Models\Post::class)->create([
+        'user_id' => $user->id,
+    ]));
+});

@@ -15,14 +15,19 @@ class LoginController extends Controller
     /**
      * 第三方平台登录.
      *
+     * @param Request $request
+     *
      * @return View | mixed
      */
     public function oauthRedirectToOtherPlatformProvider(Request $request)
     {
         $platform = $request->input('platform');
 
+        // 登录后重定向回这个地址
+        session()->put('login-redirect', $request->header('referer'));
+
         if (Auth::check()) {
-            return redirect(route('home'));
+            return redirect()->back();
         }
 
         switch ($platform) {
@@ -63,7 +68,7 @@ class LoginController extends Controller
             Auth::loginUsingId($userId, true);
         }
 
-        return redirect(route('home'));
+        return redirect(session('login-redirect', route('home')));
     }
 
     public function logout()

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTPostTagMapTable extends Migration
+class CreatePostHistoryTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,12 @@ class CreateTPostTagMapTable extends Migration
      */
     public function up()
     {
-        Schema::create('t_post_tag_map', function (Blueprint $table) {
+        Schema::create('post_histories', function (Blueprint $table) {
             $table->id();
-            $table->integer('post_id');
-            $table->integer('tag_id');
-            $table->timestamps();
-            $table->index(['tag_id', 'post_id'], 'idx_post_tag');
+            $table->unsignedBigInteger('post_id')->index()->comment('文章id');
+            $table->string('title');
+            $table->text('content');
+            $table->timestamp('created_at');
             $table->index('post_id', 'idx_post_id');
         });
     }
@@ -30,6 +30,6 @@ class CreateTPostTagMapTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('t_post_tag_map');
+        Schema::dropIfExists('post_histories');
     }
 }

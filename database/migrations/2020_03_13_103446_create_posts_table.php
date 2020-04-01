@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTPostsTable extends Migration
+class CreatePostsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,12 @@ class CreateTPostsTable extends Migration
      */
     public function up()
     {
-        Schema::create('t_posts', function (Blueprint $table) {
+        Schema::create('posts', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id')->unsigned();
             $table->string('title')->comment('标题');
             $table->string('description')->comment('描述');
+            $table->string('thumbnail')->nullable()->comment('缩略图');
             $table->string('seo_words')->comment('用作于seo的词');
             $table->text('post_index')->nullable()->comment('文章目录');
             $table->text('content')->comment('内容');
@@ -40,6 +41,6 @@ class CreateTPostsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('t_posts');
+        Schema::dropIfExists('posts');
     }
 }
