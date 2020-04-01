@@ -2,7 +2,23 @@
 
 @section('header')
     <link rel="stylesheet" href="{{ asset('css/user.css') }}">
-    <script src="{{ asset('js/user.js') }}"></script>
+    <script>
+
+        $(function () {
+            const tabsBtn = $('.tabs');
+            const rightContent = $('.right-content');
+
+            tabsBtn.on({
+                'click': function () {
+                    rightContent.hide();
+                    $('.tabs.active').removeClass('active');
+                    $(this).addClass('active');
+                    $('#' + $(this).attr('data-toggle')).show();
+                }
+            });
+
+        });
+    </script>
 @stop
 
 @section('content')
@@ -39,22 +55,61 @@
                     @endif
                 </div>
                 <div class="line"></div>
-                <div id="user-tags" class="p-3">
-                    <p>标签</p>
-                    @if (empty($tags))
-                        <p class="nothing">
-                            暂无标签，您可以
-                            <button class="btn btn-sm btn-primary">添加标签</button>
-                        </p>
-                    @else
-                        @foreach($tags as$tag)
-                            <span>{{ $tag }}</span>
-                        @endforeach
-                    @endif
+                <div id="user-tags" class="p-3 d-flex">
+                    <div class="concern flex-fill">
+                        <span>订阅了</span>
+                        <p>{{ $user->concerns_count ?? 0 }}人</p>
+                    </div>
+                    <div class="border-left fans flex-fill">
+                        <span>粉丝</span>
+                        <p>{{ $user->fans_count ?? 0 }}人</p>
+                    </div>
                 </div>
             </div>
             <div class="col rounded-sm user-module p-3">
-                右边的内容
+                <div class="btn-group mb-3" role="group" aria-label="按钮组">
+                    <button type="button" data-toggle="posts" class="active tabs btn btn-secondary">文章</button>
+                    <button type="button" data-toggle="carousel" class="tabs btn btn-secondary">轮播</button>
+                    <button type="button" data-toggle="data" class="tabs btn btn-secondary">数据</button>
+                </div>
+
+                <div id="carousel" class="right-content">
+                </div>
+                <div id="data" class="right-content">
+                </div>
+                <div id="posts" class="right-content">
+                    @if (empty($posts))
+                        <div class="alert alert-primary" role="alert">
+                            您暂未发布任何文章，快去 <a href="{{ route('post.create') }}" class="btn"></a>
+                        </div>
+                    @else
+                        @foreach($posts as $post)
+                            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                                <div class="col p-4 d-flex flex-column position-static">
+                                    <strong class="d-inline-block mb-2 text-primary">{{ $post->tags->count() > 0 ? implode(',', $post->tags->pluck('name')->toArray()) : '无标签' }}</strong>
+                                    <h3 class="mb-0">{{ $post->title }}</h3>
+                                    <div class="mb-1 text-muted">{{ $post->created_at->diffForHumans() }}</div>
+                                    <p class="card-text mb-auto">{{ $post->description }}</p>
+                                    <a href="#" class="stretched-link">继续阅读</a>
+                                </div>
+                                <div class="col-auto d-none d-lg-block align-self-center">
+                                    @if ($post->thumbnail)
+                                        <img class="post-thumbnail img-thumbnail" src="{{ $post->thumbnail }}"
+                                             alt="{{ $post->title }}">
+                                    @else
+                                        <svg class="bd-placeholder-img" width="200" height="250"
+                                             xmlns="http://www.w3.org/2000/svg"
+                                             preserveAspectRatio="xMidYMid slice" focusable="false" role="img"
+                                             aria-label="Placeholder: Thumbnail"><title>{{ $post->title }}</title>
+                                            <rect width="100%" height="100%" fill="#55595c"/>
+                                            <text x="50%" y="50%" fill="#eceeef" dy=".3em">封面</text>
+                                        </svg>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
             </div>
         </div>
     </div>

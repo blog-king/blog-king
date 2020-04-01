@@ -30,7 +30,7 @@
 
             <ul class="navbar-nav mr-right">
                 @if ($self = auth()->user())
-                    <li class="nav-item dropdown">
+                    <li class="nav-item dropleft dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             {{ $self->name }}

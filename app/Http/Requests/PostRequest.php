@@ -2,10 +2,11 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Posts;
+use App\Models\Post;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class Post extends FormRequest
+class PostRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,8 +28,8 @@ class Post extends FormRequest
         return [
             'content' => 'required',
             'title' => 'required',
-            'privacy' => 'required|in:'.Posts::PRIVACY_PUBLIC.','.Posts::PRIVACY_HIDDEN,
-            'status' => 'required|in:'.Posts::STATUS_PUBLISH.','.Posts::STATUS_DRAFT,
+            'privacy' => ['required', Rule::in([Post::PRIVACY_PUBLIC, Post::PRIVACY_HIDDEN])],
+            'status' => ['required', Rule::in([Post::STATUS_PUBLISH, Post::STATUS_DRAFT])],
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Repository\Repositories;
 
-use App\Models\Tags;
+use App\Models\Tag;
 use App\Repository\Interfaces\TagInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -21,7 +21,7 @@ class TagRepository implements TagInterface
         $cacheKey = 'tags-parent-id:'.$parent_id;
 
         return Cache::remember($cacheKey, 3600, function () use ($parent_id) {
-            return Tags::query()->where(['parent_id' => $parent_id])->get();
+            return Tag::query()->where(['parent_id' => $parent_id])->get();
         });
     }
 
@@ -34,10 +34,10 @@ class TagRepository implements TagInterface
      */
     public function getTagByIds(array $tagIds): array
     {
-        $data = Tags::query()->whereIn('id', $tagIds)->get();
+        $data = Tag::query()->whereIn('id', $tagIds)->get();
         //将id顺序调整为传入tagId顺序
         $tmp = $result = [];
-        $data->each(function (Tags $tag) use (&$tmp) {
+        $data->each(function (Tag $tag) use (&$tmp) {
             $tmp[$tag->id] = $tag;
         });
         foreach ($tagIds as $tagId) {
@@ -54,7 +54,7 @@ class TagRepository implements TagInterface
      */
     public function getAll(): Collection
     {
-        return Tags::query()->get();
+        return Tag::query()->get();
     }
 
     /**
@@ -68,7 +68,7 @@ class TagRepository implements TagInterface
         $cacheKey = 'tags-level0-and-level1';
 
         return Cache::remember($cacheKey, 3600, function () {
-            return Tags::query()->whereIn('level', [0, 1])->get();
+            return Tag::query()->whereIn('level', [0, 1])->get();
         });
     }
 }

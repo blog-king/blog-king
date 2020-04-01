@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\Posts;
-use App\Models\PostTagMap;
-use App\Models\Tags;
+use App\Models\Post;
+use App\Models\PostTag;
+use App\Models\Tag;
 use App\Repository\Repositories\PostRepository;
 use App\User;
 use Faker\Generator as Faker;
@@ -16,7 +16,7 @@ class PostsTest extends TestCase
 {
     use DatabaseMigrations;
 
-    private Tags $parentTag;
+    private Tag $parentTag;
 
     private User $postOwnerUser; //文章创建者
     private User $guestUser; //游客一号
@@ -25,16 +25,16 @@ class PostsTest extends TestCase
 
     private PostRepository $postRepository;
 
-    private Posts $post;
+    private Post $post;
 
     private $faker;
 
     protected function setUp(): void
     {
         parent::setUp();
-        /** @var Tags $grantParantTag */
-        $grantParantTag = factory(Tags::class, 1)->create()->first;
-        $parentTag = factory(Tags::class, 3)->create([
+        /** @var Tag $grantParantTag */
+        $grantParantTag = factory(Tag::class, 1)->create()->first;
+        $parentTag = factory(Tag::class, 3)->create([
             'parent_id' => $grantParantTag->id,
             'level' => $grantParantTag->level + 1,
         ]);
@@ -47,24 +47,24 @@ class PostsTest extends TestCase
         $this->guestUser3 = $users[3];
 
         //模拟数据
-        $posts = factory(Posts::class, 1)->create([
-            'privacy' => Posts::PRIVACY_PUBLIC,
-            'status' => Posts::STATUS_PUBLISH,
+        $posts = factory(Post::class, 1)->create([
+            'privacy' => Post::PRIVACY_PUBLIC,
+            'status' => Post::STATUS_PUBLISH,
             'user_id' => $this->postOwnerUser->id,
-        ])->each(function (Posts $posts) {
-            $tags = factory(Tags::class, mt_rand(1, 3))->create([
+        ])->each(function (Post $posts) {
+            $tags = factory(Tag::class, mt_rand(1, 3))->create([
                 'parent_id' => $this->parentTag->id,
                 'level' => $this->parentTag->level + 1,
             ]);
-            $tags->each(function (Tags $tags) use ($posts) {
-                $postTagMap = new PostTagMap();
+            $tags->each(function (Tag $tags) use ($posts) {
+                $postTagMap = new PostTag();
                 $postTagMap->post_id = $posts->id;
                 $postTagMap->tag_id = $tags->id;
                 $postTagMap->save();
             });
         });
 
-        /** @var Posts $post */
+        /** @var Post $post */
         $post = $posts->first();
         $this->post = $post;
 
@@ -99,9 +99,9 @@ class PostsTest extends TestCase
      */
     public function testPostRepositoryForUpdate()
     {
-        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
+        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
-        $tags->each(function (Tags $tag) use (&$tagIds) {
+        $tags->each(function (Tag $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
         });
 
@@ -133,9 +133,9 @@ class PostsTest extends TestCase
 
     public function testApiForUpdate()
     {
-        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
+        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
-        $tags->each(function (Tags $tag) use (&$tagIds) {
+        $tags->each(function (Tag $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
         });
 
@@ -149,7 +149,7 @@ class PostsTest extends TestCase
 
         //将权限修改为隐藏
         $response = $this->actingAs($this->postOwnerUser)
-            ->patch(route('post-api-update', ['id' => $this->post->id]), array_merge(['privacy' => Posts::PRIVACY_HIDDEN], $data));
+            ->patch(route('post-api-update', ['id' => $this->post->id]), array_merge(['privacy' => Post::PRIVACY_HIDDEN], $data));
         $response->assertForbidden();
 
         //超频请求
@@ -198,9 +198,9 @@ class PostsTest extends TestCase
 
     public function testApiForCreate()
     {
-        $tags = factory(Tags::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
+        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
         $tagIds = [];
-        $tags->each(function (Tags $tag) use (&$tagIds) {
+        $tags->each(function (Tag $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
         });
         $data = [
@@ -208,8 +208,8 @@ class PostsTest extends TestCase
             'content' => $this->faker->randomHtml(),
             'description' => $this->faker->sentences[0],
             'seo_words' => implode(',', $this->faker->words),
-            'status' => Posts::STATUS_PUBLISH,
-            'privacy' => Posts::PRIVACY_PUBLIC,
+            'status' => Post::STATUS_PUBLISH,
+            'privacy' => Post::PRIVACY_PUBLIC,
             'tag_ids' => implode(',', $tagIds),
         ];
 
@@ -220,7 +220,7 @@ class PostsTest extends TestCase
         $this->assertNotEmpty($result->data->title);
         $this->assertNotEmpty($result->data->content);
         $this->assertNotEmpty($result->data->seo_words);
-        $tags->each(function (Tags $tag) use ($result) {
+        $tags->each(function (Tag $tag) use ($result) {
             $this->assertDatabaseHas('t_post_tag_map', ['post_id' => $result->data->id, 'tag_id' => $tag->id]);
         });
 
@@ -231,9 +231,9 @@ class PostsTest extends TestCase
 
     public function testRepositoryForUserList()
     {
-        factory(Posts::class, 10)->create([
-            'privacy' => Posts::PRIVACY_PUBLIC,
-            'status' => Posts::STATUS_PUBLISH,
+        factory(Post::class, 10)->create([
+            'privacy' => Post::PRIVACY_PUBLIC,
+            'status' => Post::STATUS_PUBLISH,
             'user_id' => $this->postOwnerUser->id,
         ]);
 
@@ -246,9 +246,9 @@ class PostsTest extends TestCase
 
         //----------------------------------------------------------------------------------------///
         //测试隐私文章
-        factory(Posts::class, 10)->create([
-            'privacy' => Posts::PRIVACY_HIDDEN,
-            'status' => Posts::STATUS_PUBLISH,
+        factory(Post::class, 10)->create([
+            'privacy' => Post::PRIVACY_HIDDEN,
+            'status' => Post::STATUS_PUBLISH,
             'user_id' => $this->guestUser->id,
         ]);
 
@@ -264,9 +264,9 @@ class PostsTest extends TestCase
 
         //----------------------------------------------------------------------------------------///
         //测试草稿文章
-        factory(Posts::class, 10)->create([
-            'privacy' => Posts::PRIVACY_PUBLIC,
-            'status' => Posts::STATUS_DRAFT,
+        factory(Post::class, 10)->create([
+            'privacy' => Post::PRIVACY_PUBLIC,
+            'status' => Post::STATUS_DRAFT,
             'user_id' => $this->guestUser2->id,
         ]);
         //草稿文章不是自己无法获取到
@@ -281,9 +281,9 @@ class PostsTest extends TestCase
 
     public function testApiForUserList()
     {
-        factory(Posts::class, 10)->create([
-            'privacy' => Posts::PRIVACY_PUBLIC,
-            'status' => Posts::STATUS_PUBLISH,
+        factory(Post::class, 10)->create([
+            'privacy' => Post::PRIVACY_PUBLIC,
+            'status' => Post::STATUS_PUBLISH,
             'user_id' => $this->postOwnerUser->id,
         ]);
 

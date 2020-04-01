@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tags;
+use App\Models\Tag;
 use App\Repository\Repositories\TagRepository;
 use Illuminate\Http\Request;
 
@@ -60,7 +60,7 @@ class TagsController extends Controller
         if (empty($parentId)) {
             //开始组装叠层
             $tags = $tagRepository->getLevel0andLevel();
-            $tags->each(function (Tags $tag) {
+            $tags->each(function (Tag $tag) {
                 $tag->setVisible(['id', 'name', 'parent_id', 'level', 'children']);
             });
             $tags = $tags->toArray();

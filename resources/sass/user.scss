@@ -1,6 +1,6 @@
 @import "config";
 
-$avatarSize: 104;
+$avatarSize: 104px;
 
 #main {
   background: rgb(240, 242, 245);
@@ -20,10 +20,22 @@ $avatarSize: 104;
 }
 
 #user-avatar {
-  width: $avatarSize px;
-  height: $avatarSize px;
+  width: $avatarSize;
+  height: $avatarSize;
 }
 
 .nothing {
   color: #aaa;
+}
+
+.post-thumbnail {
+  margin-right: 24px;
+}
+
+.concern span, .fans span {
+  color: #bbb;
+}
+
+.fans {
+  padding-left: 1rem;
 }

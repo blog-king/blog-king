@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\Post;
-use App\Models\Posts;
+use App\Models\Post;
 use App\Repository\Repositories\PostRepository;
 use App\Repository\Repositories\UserRepository;
 use Illuminate\Cache\RateLimiter;
@@ -56,7 +55,7 @@ class PostsController extends Controller
     {
         $userId = Auth::id();
         $post = $this->postRepository->getPostById($id);
-        if (!$post instanceof Posts || Posts::PRIVACY_PUBLIC != $post->privacy || Posts::STATUS_PUBLISH != $post->status) {
+        if (!$post instanceof Post || Post::PRIVACY_PUBLIC != $post->privacy || Post::STATUS_PUBLISH != $post->status) {
             throw new NotFoundHttpException(__('post.404'));
         }
 
@@ -255,7 +254,7 @@ class PostsController extends Controller
 
         $privacy = $request->input('privacy');
         //只能由隐藏改成发布
-        if ($privacy && Posts::PRIVACY_PUBLIC != $privacy) {
+        if ($privacy && Post::PRIVACY_PUBLIC != $privacy) {
             throw new HttpException(403, __('post.403_can_not_update_post_privacy'));
         }
 

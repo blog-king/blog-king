@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTPostHistoryTable extends Migration
+class CreateUserLoginLogsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,11 @@ class CreateTPostHistoryTable extends Migration
      */
     public function up()
     {
-        Schema::create('t_post_history', function (Blueprint $table) {
+        Schema::create('user_login_logs', function (Blueprint $table) {
             $table->id();
-            $table->integer('post_id')->unsigned()->comment('文章id');
-            $table->string('title');
-            $table->text('content');
+            $table->unsignedBigInteger('user_id');
+            $table->string('ip', 64);
             $table->timestamp('created_at');
-            $table->index('post_id', 'idx_post_id');
         });
     }
 
@@ -30,6 +28,6 @@ class CreateTPostHistoryTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('t_post_history');
+        Schema::dropIfExists('user_login_logs');
     }
 }

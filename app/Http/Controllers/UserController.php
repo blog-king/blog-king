@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use App\User;
 use Illuminate\Http\Request;
 
@@ -9,10 +10,19 @@ class UserController extends Controller
 {
     public function user($name, Request $request)
     {
-        // todo: 需要加载更多的用户博客数据
+        /** @var User $user */
+        $user = User::query()->where('name', $name)->firstOrFail();
+        $posts = $user->posts()
+            ->with('tags')
+            ->where('privacy', Post::STATUS_PUBLISH)
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
 
-        $user = User::query()->where('name', $name)->first();
-
-        return view('user', ['title' => $name.'的主页', 'user' => $user]);
+        return view('user', [
+            'title' => $name.'的主页',
+            'user' => $user,
+            'posts' => $posts,
+        ]);
     }
 }

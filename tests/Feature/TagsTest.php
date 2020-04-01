@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tags;
+use App\Models\Tag;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
 
@@ -19,13 +19,13 @@ class TagsTest extends TestCase
     {
         $parentTagCount = 3;
         $childTagCount = 10;
-        factory(Tags::class, 1)->create(['name' => 'Painting'])->each(function (Tags $tag) use ($parentTagCount, $childTagCount) {
-            factory(Tags::class, $parentTagCount)->create([
+        factory(Tag::class, 1)->create(['name' => 'Painting'])->each(function (Tag $tag) use ($parentTagCount, $childTagCount) {
+            factory(Tag::class, $parentTagCount)->create([
                 'name' => 'color'.$tag->id,
                 'parent_id' => $tag->id,
                 'level' => $tag->level + 1,
-            ])->each(function (Tags $childTag) use ($childTagCount) {
-                factory(Tags::class, $childTagCount)->create([
+            ])->each(function (Tag $childTag) use ($childTagCount) {
+                factory(Tag::class, $childTagCount)->create([
                     'parent_id' => $childTag->id,
                     'level' => $childTag->level + 1,
                 ]);

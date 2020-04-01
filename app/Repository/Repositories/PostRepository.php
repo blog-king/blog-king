@@ -2,16 +2,14 @@
 
 namespace App\Repository\Repositories;
 
-use App\Http\Requests\Post;
+use App\Models\Post;
 use App\Models\PostHistory;
-use App\Models\Posts;
-use App\Models\PostTagMap;
+use App\Models\PostTag;
 use App\Repository\Interfaces\PostInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class PostRepository implements PostInterface
 {
@@ -23,15 +21,15 @@ class PostRepository implements PostInterface
      *
      * @param int $id
      *
-     * @return Posts|null
+     * @return Post|null
      */
-    public function getPostById(int $id): ?Posts
+    public function getPostById(int $id): ?Post
     {
         $cacheKey = $this->genPostCacheKeyById($id);
 
-        return Cache::remember($cacheKey, 3600, function () use ($id) {
-            $data = Posts::query()->with('tags')->find($id);
-            if ($data instanceof Posts) {
+        return Cache::remember($cacheKey, now()->addHour(), function () use ($id) {
+            $data = Post::query()->with('tags')->find($id);
+            if ($data instanceof Post) {
                 return $data;
             }
 
@@ -41,10 +39,10 @@ class PostRepository implements PostInterface
 
     public function getPostsByIds(array $ids): Collection
     {
-        $collection = Posts::query()->with('tags')->whereIn('id', $ids)->get();
-        $collection->each(function (Posts $post) {
-            if (Posts::PRIVACY_PUBLIC == $post->privacy) {
-                Cache::add($this->genPostCacheKeyById($post->id), $post, 3600);
+        $collection = Post::query()->with('tags')->whereIn('id', $ids)->get();
+        $collection->each(function (Post $post) {
+            if (Post::PRIVACY_PUBLIC == $post->privacy) {
+                Cache::add($this->genPostCacheKeyById($post->id), $post, now()->addHour());
             }
         });
 
@@ -52,23 +50,24 @@ class PostRepository implements PostInterface
     }
 
     /**
-     * @param int   $user_id
-     * @param array $data
-     *                       eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
-     *                       'description' => ?, 'post_index' => ?],
-     * @param array $tagIds
-     *
-     * @return Posts|null
-     *
      * @throws \Exception
      * @throws \Throwable
+     *
+     * @param array $tagIds
+     *
+     * @return Post|null
+     *
+     * @param int   $userId
+     * @param array $data
+     *                      eg: ['title'=>require, content=> require, 'seo_words' => require, 'status' => require, 'privacy' => require,
+     *                      'description' => ?, 'post_index' => ?],
      */
-    public function create(int $user_id, array $data, array $tagIds = []): ?Posts
+    public function create(int $userId, array $data, array $tagIds = []): ?Post
     {
-        $post = Model::resolveConnection()->transaction(function () use ($user_id, $data, $tagIds) {
-            $post = new Posts();
+        $post = Model::resolveConnection()->transaction(function () use ($userId, $data, $tagIds) {
+            $post = new Post();
             $post->fill($data);
-            $post->user_id = $user_id;
+            $post->user_id = $userId;
             $post->save();
 
             if (!empty($tagIds)) {
@@ -77,8 +76,8 @@ class PostRepository implements PostInterface
                 foreach ($tagIds as $tagId) {
                     $bulkInsetValues[] = ['post_id' => $post->id, 'tag_id' => $tagId, 'created_at' => $now];
                 }
-                //PostTagMap::query()->insert($bulkInsetValues);
-                DB::table('t_post_tag_map')->insert($bulkInsetValues);
+                //PostTag::query()->insert($bulkInsetValues);
+                PostTag::query()->insert($bulkInsetValues);
             }
 
             return $post;
@@ -88,24 +87,25 @@ class PostRepository implements PostInterface
     }
 
     /**
-     * @param int $id
+     * @throws \Exception
+     *
      * @param int $userId
      *
      * @return bool
      *
-     * @throws \Exception
+     * @param int $id
      */
     public function delete(int $id, int $userId): bool
     {
         //$post = $this->getPostById($id);
-        $post = Posts::query()
+        $post = Post::query()
             ->where('id', '=', $id)
             ->first();
         if (empty($post)) {
             throw new \Exception('Not Found.', 404);
         }
 
-        if ($post instanceof Posts && $post->user_id != $userId) {
+        if ($post instanceof Post && $post->user_id != $userId) {
             throw new \Exception('FORBIDDEN.', 403);
         }
 
@@ -117,20 +117,21 @@ class PostRepository implements PostInterface
     /**
      * 更新一个文章.
      *
-     * @param int   $id
-     * @param int   $userId
+     * @throws \Exception
+     * @throws \Throwable
+     *
      * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
      *
      * @return bool
      *
-     * @throws \Exception
-     * @throws \Throwable
+     * @param int $id
+     * @param int $userId
      */
     public function update(int $id, int $userId, array $data, array $tagIds): bool
     {
-        /** @var Posts $post */
-        $post = Posts::query()
+        /** @var Post $post */
+        $post = Post::query()
             ->where('id', '=', $id)
             ->first();
 
@@ -138,7 +139,7 @@ class PostRepository implements PostInterface
             throw new \Exception('Not Found.', 404);
         }
 
-        if ($post instanceof Posts && $post->user_id != $userId) {
+        if ($post instanceof Post && $post->user_id != $userId) {
             throw new \Exception('FORBIDDEN.', 403);
         }
 
@@ -150,19 +151,15 @@ class PostRepository implements PostInterface
             $postHistory->content = $post->content;
             $postHistory->save();
 
-            //修改文章
-            foreach ($data as $key => $datum) {
-                $post->$key = $datum;
-            }
-            $post->save();
+            $post->update($data);
 
             //处理文章tag
-            $postTags = PostTagMap::query()
-                ->where('post_id', '=', $post->id)
+            $postTags = PostTag::query()
+                ->where('post_id', $post->id)
                 ->get();
             $noEditTagIds = [];
             //删除了的id直接删除当前标签
-            $postTags->each(function (PostTagMap $postTagMap) use (&$noEditTagIds, $tagIds) {
+            $postTags->each(function (PostTag $postTagMap) use (&$noEditTagIds, $tagIds) {
                 if (!in_array($postTagMap->tag_id, $tagIds)) {
                     $postTagMap->delete();
                 } else {
@@ -182,7 +179,7 @@ class PostRepository implements PostInterface
                 }
             }
             if (!empty($addTagIds)) {
-                DB::table('t_post_tag_map')->insert($addTagIds);
+                PostTag::query()->insert($addTagIds);
             }
 
             return true;
@@ -194,7 +191,7 @@ class PostRepository implements PostInterface
      * @param int    $targetId
      * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
      *
-     * @return array ['data' => ['Posts', 'Posts'], 'next' => bool]
+     * @return array ['data' => ['Post', 'Post'], 'next' => bool]
      */
     public function getPosts(string $targetType, int $targetId, array $options = []): array
     {
@@ -205,7 +202,7 @@ class PostRepository implements PostInterface
         switch ($targetType) {
             case self::TARGET_TYPE_TAG:
                 while (true) {
-                    $postIds = PostTagMap::query()
+                    $postIds = PostTag::query()
                         ->where(['tag_id' => $targetId])
                         ->take($limit + 1) //这里 +1 方便计算下一页
                         ->skip(($page - 1) * $limit)
@@ -219,9 +216,9 @@ class PostRepository implements PostInterface
 
                     $result = [];
                     $i = 0;
-                    /** @var Posts $post */
+                    /** @var Post $post */
                     foreach ($posts as $post) {
-                        if ($post->user_id == $userId && (Posts::PRIVACY_HIDDEN == $post->privacy || Posts::STATUS_DRAFT == $post->status)) {
+                        if ($post->user_id == $userId && (Post::PRIVACY_HIDDEN == $post->privacy || Post::STATUS_DRAFT == $post->status)) {
                             continue;
                         }
                         if ($i == $limit) {
@@ -237,11 +234,11 @@ class PostRepository implements PostInterface
                 }
                 break;
             case self::TARGET_TYPE_USER:
-                $posts = Posts::query()
+                $posts = Post::query()
                     ->with('tags')
                     ->where(['user_id' => $targetId])
                     ->when($targetId != $userId, function (Builder $query) {
-                        $query->where(['privacy' => Posts::PRIVACY_PUBLIC, 'status' => Posts::STATUS_PUBLISH]);
+                        $query->where(['privacy' => Post::PRIVACY_PUBLIC, 'status' => Post::STATUS_PUBLISH]);
                     })
                     ->take($limit + 1) //这里 +1 方便计算下一页
                     ->skip(($page - 1) * $limit)

@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Posts;
+use App\Models\Post;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -14,12 +14,12 @@ class PostUpdated
     use InteractsWithSockets;
     use SerializesModels;
 
-    private Posts $post;
+    private Post $post;
 
     /**
      * PostUpdated constructor.
      */
-    public function __construct(Posts $posts)
+    public function __construct(Post $posts)
     {
         $this->post = $posts;
     }

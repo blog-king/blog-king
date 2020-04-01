@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTTagsTable extends Migration
+class CreateTagsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateTTagsTable extends Migration
      */
     public function up()
     {
-        Schema::create('t_tags', function (Blueprint $table) {
+        Schema::create('tags', function (Blueprint $table) {
             $table->id();
             $table->string('name', 32);
             $table->integer('level')->default(0)->comment('层级关系，第几层');
@@ -30,6 +30,6 @@ class CreateTTagsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('t_tags');
+        Schema::dropIfExists('tags');
     }
 }

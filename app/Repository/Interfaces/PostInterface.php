@@ -2,7 +2,7 @@
 
 namespace App\Repository\Interfaces;
 
-use App\Models\Posts;
+use App\Models\Post;
 use Illuminate\Database\Eloquent\Collection;
 
 interface PostInterface
@@ -12,9 +12,9 @@ interface PostInterface
      *
      * @param int $id
      *
-     * @return Posts|null
+     * @return Post|null
      */
-    public function getPostById(int $id): ?Posts;
+    public function getPostById(int $id): ?Post;
 
     /**
      * 批量获取文章.
@@ -32,9 +32,9 @@ interface PostInterface
      * @param array $data
      * @param array $tagIds
      *
-     * @return Posts
+     * @return Post
      */
-    public function create(int $userId, array $data, array $tagIds): ?Posts;
+    public function create(int $userId, array $data, array $tagIds): ?Post;
 
     /**
      * 删除一篇文章.
