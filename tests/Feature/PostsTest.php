@@ -32,11 +32,15 @@ class PostsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        /** @var Tag $grantParantTag */
-        $grantParantTag = factory(Tag::class, 1)->create()->first;
+
+        $this->postRepository = $this->app->make(PostRepository::class);
+        $this->faker = $this->app->make(Faker::class);
+
+        /** @var Tag $grantParentTag */
+        $grantParentTag = factory(Tag::class, 1)->create()->first;
         $parentTag = factory(Tag::class, 3)->create([
-            'parent_id' => $grantParantTag->id,
-            'level' => $grantParantTag->level + 1,
+            'parent_id' => $grantParentTag->id,
+            'level' => $grantParentTag->level + 1,
         ]);
         $this->parentTag = $parentTag->first();
 
@@ -51,15 +55,17 @@ class PostsTest extends TestCase
             'privacy' => Post::PRIVACY_PUBLIC,
             'status' => Post::STATUS_PUBLISH,
             'user_id' => $this->postOwnerUser->id,
-        ])->each(function (Post $posts) {
+        ])->each(function (Post $post) {
             $tags = factory(Tag::class, mt_rand(1, 3))->create([
                 'parent_id' => $this->parentTag->id,
                 'level' => $this->parentTag->level + 1,
             ]);
-            $tags->each(function (Tag $tags) use ($posts) {
+            $tags->each(function (Tag $tags) use ($post) {
                 $postTagMap = new PostTag();
-                $postTagMap->post_id = $posts->id;
+                $postTagMap->post_id = $post->id;
+                $postTagMap->user_id = $post->user_id;
                 $postTagMap->tag_id = $tags->id;
+                $postTagMap->name = $tags->name;
                 $postTagMap->save();
             });
         });
@@ -68,8 +74,6 @@ class PostsTest extends TestCase
         $post = $posts->first();
         $this->post = $post;
 
-        $this->postRepository = $this->app->make(PostRepository::class);
-        $this->faker = $this->app->make(Faker::class);
     }
 
     /**
@@ -82,10 +86,12 @@ class PostsTest extends TestCase
         $this->assertSame($testPost->user_id, $this->post->user_id);
 
         //不是自己的文章不允许返回json
-        $response = $this->actingAs($this->guestUser)->get(route('post-api-show', ['id' => $this->post->id]))->header('accept', 'application/json');
+        $response = $this->actingAs($this->guestUser)->get(route('post-api-show',
+            ['id' => $this->post->id]))->header('accept', 'application/json');
         $this->assertTrue(403 == $response->getStatusCode());
 
-        $response = $this->actingAs($this->postOwnerUser)->get(route('post-api-show', ['id' => $this->post->id]), ['accept' => 'application/json']);
+        $response = $this->actingAs($this->postOwnerUser)->get(route('post-api-show', ['id' => $this->post->id]),
+            ['accept' => 'application/json']);
         $response->assertOk();
 
         $result = json_decode($response->content());
@@ -99,11 +105,10 @@ class PostsTest extends TestCase
      */
     public function testPostRepositoryForUpdate()
     {
-        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
-        $tagIds = [];
-        $tags->each(function (Tag $tag) use (&$tagIds) {
-            $tagIds[] = $tag->id;
-        });
+        $tags = factory(Tag::class, 3)->create([
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+        ]);
+        $tagIds = $tags->pluck('id')->all();
 
         $oldTagIds = $this->post->tags->pluck('id')->all();
         $data = $this->genUpdatePostData();
@@ -112,17 +117,20 @@ class PostsTest extends TestCase
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($updatedPost->title, $data['title']);
         $this->assertSame($updatedPost->content, $data['content']);
-        $this->assertSame($tagIds, $updatedPost->tags->pluck('id')->all());
-        $this->assertDatabaseHas('t_post_history', ['post_id' => $this->post->id, 'title' => $this->post->title, 'content' => $this->post->content]);
+        $this->assertSame($tagIds, $updatedPost->postTags()->get()->pluck('tag_id')->all());
+        $this->assertDatabaseHas('post_histories',
+            ['post_id' => $this->post->id, 'title' => $this->post->title, 'content' => $this->post->content]);
 
         //不修改tagIds
-        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id, $this->genUpdatePostData(), $oldTagIds));
+        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id,
+            $this->genUpdatePostData(), $oldTagIds));
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($oldTagIds, $updatedPost->tags->pluck('id')->all());
 
         //修改部分tagIds
         $updatedTagIds = [$oldTagIds[0], $tagIds[0]];
-        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id, $this->genUpdatePostData(), $updatedTagIds));
+        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id,
+            $this->genUpdatePostData(), $updatedTagIds));
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($updatedTagIds, $updatedPost->tags->pluck('id')->all());
 
@@ -133,7 +141,9 @@ class PostsTest extends TestCase
 
     public function testApiForUpdate()
     {
-        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
+        $tags = factory(Tag::class, 3)->create([
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+        ]);
         $tagIds = [];
         $tags->each(function (Tag $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
@@ -149,7 +159,8 @@ class PostsTest extends TestCase
 
         //将权限修改为隐藏
         $response = $this->actingAs($this->postOwnerUser)
-            ->patch(route('post-api-update', ['id' => $this->post->id]), array_merge(['privacy' => Post::PRIVACY_HIDDEN], $data));
+            ->patch(route('post-api-update', ['id' => $this->post->id]),
+                array_merge(['privacy' => Post::PRIVACY_HIDDEN], $data));
         $response->assertForbidden();
 
         //超频请求
@@ -162,7 +173,8 @@ class PostsTest extends TestCase
         $rateLimit->resetAttempts($postRateLimitKey);
 
         //ok
-        $response = $this->actingAs($this->postOwnerUser)->patch(route('post-api-update', ['id' => $this->post->id]), $data);
+        $response = $this->actingAs($this->postOwnerUser)->patch(route('post-api-update', ['id' => $this->post->id]),
+            $data);
         $response->assertOk();
         $result = json_decode($response->content(), true);
         $this->assertTrue($result['data']['success']);
@@ -182,7 +194,6 @@ class PostsTest extends TestCase
 
     /**
      * 生成修改文章的内容.
-     *
      * @return array
      */
     private function genUpdatePostData()
@@ -198,7 +209,9 @@ class PostsTest extends TestCase
 
     public function testApiForCreate()
     {
-        $tags = factory(Tag::class, 3)->create(['parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1]);
+        $tags = factory(Tag::class, 3)->create([
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+        ]);
         $tagIds = [];
         $tags->each(function (Tag $tag) use (&$tagIds) {
             $tagIds[] = $tag->id;
@@ -221,7 +234,7 @@ class PostsTest extends TestCase
         $this->assertNotEmpty($result->data->content);
         $this->assertNotEmpty($result->data->seo_words);
         $tags->each(function (Tag $tag) use ($result) {
-            $this->assertDatabaseHas('t_post_tag_map', ['post_id' => $result->data->id, 'tag_id' => $tag->id]);
+            $this->assertDatabaseHas('post_tags', ['post_id' => $result->data->id, 'tag_id' => $tag->id]);
         });
 
         //超频请求
@@ -237,11 +250,13 @@ class PostsTest extends TestCase
             'user_id' => $this->postOwnerUser->id,
         ]);
 
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id, ['limit' => 5, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id,
+            ['limit' => 5, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
         $this->assertSame(count($result['data']), 5);
         $this->assertTrue($result['next']);
 
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id, ['limit' => 50, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id,
+            ['limit' => 50, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
         $this->assertFalse($result['next']);
 
         //----------------------------------------------------------------------------------------///
@@ -253,12 +268,14 @@ class PostsTest extends TestCase
         ]);
 
         //隐私文章不是自己无法获取到
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id, ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser2->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id,
+            ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser2->id]);
         $this->assertEmpty($result['data']);
         $this->assertFalse($result['next']);
 
         //自己能获取到自己的隐私文章，并测试分页零界点
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser->id, ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser->id,
+            ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser->id]);
         $this->assertSame(count($result['data']), 10);
         $this->assertFalse($result['next']);
 
@@ -270,12 +287,14 @@ class PostsTest extends TestCase
             'user_id' => $this->guestUser2->id,
         ]);
         //草稿文章不是自己无法获取到
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser3->id, ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser3->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser3->id,
+            ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser3->id]);
         $this->assertEmpty($result['data']);
         $this->assertFalse($result['next']);
 
         //自己能获取自己的草稿文章
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id, ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser2->id]);
+        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id,
+            ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser2->id]);
         $this->assertSame(count($result['data']), 10);
     }
 
@@ -288,13 +307,18 @@ class PostsTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->postOwnerUser)
-            ->get(route('post-api-list', ['target_type' => PostRepository::TARGET_TYPE_USER, 'target_id' => $this->postOwnerUser->id, 'limit' => 5]));
+            ->get(route('post-api-list', [
+                'target_type' => PostRepository::TARGET_TYPE_USER,
+                'target_id' => $this->postOwnerUser->id,
+                'limit' => 1
+            ]));
+
         $response->assertOk();
         $result = json_decode($response->content());
 
-        $this->assertTrue($result->data->next);
-        $this->assertSame(count($result->data->list), 5);
-        $post = (array)$result->data->list[0];
+        $this->assertTrue($result->data->has_next);
+        $this->assertSame(count($result->data->list), 1);
+        $post = (array) $result->data->list[0];
         $this->assertArrayHasKey('id', $post);
         $this->assertArrayHasKey('title', $post);
         $this->assertArrayHasKey('description', $post);

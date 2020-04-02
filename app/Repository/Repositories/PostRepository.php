@@ -5,10 +5,12 @@ namespace App\Repository\Repositories;
 use App\Models\Post;
 use App\Models\PostHistory;
 use App\Models\PostTag;
+use App\Models\Tag;
 use App\Repository\Interfaces\PostInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
 class PostRepository implements PostInterface
@@ -71,12 +73,19 @@ class PostRepository implements PostInterface
             $post->save();
 
             if (!empty($tagIds)) {
-                $bulkInsetValues = [];
                 $now = date('Y-m-d H:i:s');
-                foreach ($tagIds as $tagId) {
-                    $bulkInsetValues[] = ['post_id' => $post->id, 'tag_id' => $tagId, 'created_at' => $now];
-                }
-                //PostTag::query()->insert($bulkInsetValues);
+                $bulkInsetValues = Tag::query()
+                    ->whereIn('id', $tagIds)
+                    ->get()
+                    ->map(function (Tag $tag) use ($post, $now) {
+                        return [
+                            'post_id' => $post->id,
+                            'tag_id' => $tag->id,
+                            'created_at' => $now,
+                            'name' => $tag->name,
+                            'user_id' => $post->user_id,
+                        ];
+                    })->toArray();
                 PostTag::query()->insert($bulkInsetValues);
             }
 
@@ -98,9 +107,7 @@ class PostRepository implements PostInterface
     public function delete(int $id, int $userId): bool
     {
         //$post = $this->getPostById($id);
-        $post = Post::query()
-            ->where('id', '=', $id)
-            ->first();
+        $post = Post::query()->find($id);
         if (empty($post)) {
             throw new \Exception('Not Found.', 404);
         }
@@ -131,9 +138,7 @@ class PostRepository implements PostInterface
     public function update(int $id, int $userId, array $data, array $tagIds): bool
     {
         /** @var Post $post */
-        $post = Post::query()
-            ->where('id', '=', $id)
-            ->first();
+        $post = Post::query()->find($id);
 
         if (empty($post)) {
             throw new \Exception('Not Found.', 404);
@@ -153,33 +158,29 @@ class PostRepository implements PostInterface
 
             $post->update($data);
 
-            //处理文章tag
-            $postTags = PostTag::query()
-                ->where('post_id', $post->id)
-                ->get();
-            $noEditTagIds = [];
-            //删除了的id直接删除当前标签
-            $postTags->each(function (PostTag $postTagMap) use (&$noEditTagIds, $tagIds) {
-                if (!in_array($postTagMap->tag_id, $tagIds)) {
-                    $postTagMap->delete();
-                } else {
-                    $noEditTagIds[] = $postTagMap->tag_id;
+            $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
+            $diffIds = array_diff(
+                $tagIds,
+                $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
+            );
+
+            if (!empty($diffIds)) {
+                $now = date('Y-m-d H:i:s');
+
+                $addTags = Tag::query()->whereIn('id', $diffIds)->get()
+                    ->map(function (Tag $tag) use ($post, $now) {
+                        return [
+                            'post_id' => $post->id,
+                            'tag_id' => $tag->id,
+                            'created_at' => $now,
+                            'name' => $tag->name,
+                            'user_id' => $post->user_id,
+                        ];
+                    })->toArray();
+
+                if (!empty($addTags)) {
+                    PostTag::query()->insert($addTags);
                 }
-            });
-            //处理添加的tag ,对比原来的tag id，如果不在原来的tagId的数组，则是新增的
-            $addTagIds = [];
-            $now = date('Y-m-d H:i:s');
-            foreach ($tagIds as $tagId) {
-                if (!in_array($tagId, $noEditTagIds)) {
-                    $addTagIds[] = [
-                        'post_id' => $post->id,
-                        'tag_id' => $tagId,
-                        'created_at' => $now,
-                    ];
-                }
-            }
-            if (!empty($addTagIds)) {
-                PostTag::query()->insert($addTagIds);
             }
 
             return true;
@@ -259,6 +260,48 @@ class PostRepository implements PostInterface
                 return ['data' => $result, 'next' => $next];
                 break;
         }
+    }
+
+    /**
+     * 通过 postTagId 获取文章列表.
+     *
+     * @param int $userId
+     * @param $tags
+     * @param int $page
+     * @param int $perPage
+     *
+     * @return \Illuminate\Contracts\Pagination\Paginator
+     */
+    public function getPostsByPostTags(int $userId, $tags, $page = 1, $perPage = 10)
+    {
+        $tags = is_array($tags) ? $tags : [$tags];
+
+        return Post::query()
+            ->visible()
+            ->with('postTags')
+            ->whereHas('postTags', function (HasMany $hasMany) use ($tags) {
+                $hasMany->whereIn('tag_id', $tags);
+            })
+            ->where(['user_id' => $userId])
+            ->simplePaginate($perPage, ['*'], 'page', $page);
+    }
+
+    /**
+     * 通过 userId 获取文章列表.
+     *
+     * @param int $userId
+     * @param int $page
+     * @param int $perPage
+     *
+     * @return \Illuminate\Contracts\Pagination\Paginator
+     */
+    public function getPostsByUser(int $userId, $page = 1, $perPage = 10)
+    {
+        return Post::query()
+            ->visible()
+            ->with('postTags')
+            ->where(['user_id' => $userId])
+            ->simplePaginate($perPage, ['*'], 'page', $page);
     }
 
     /**
