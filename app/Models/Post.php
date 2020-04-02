@@ -12,26 +12,28 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * App\Models\Post.
  *
- * @property int                                                        $id
- * @property int                                                        $user_id
- * @property string                                                     $title            标题
- * @property string                                                     $description      描述
- * @property string|null                                                $thumbnail        缩略图
- * @property string                                                     $seo_words        用作于seo的词
- * @property string|null                                                $post_index       文章目录
- * @property string                                                     $content          内容
- * @property int                                                        $status           发布状态，1位发布，2为草稿
- * @property int                                                        $privacy          权限，1为公开，2为仅自己可见
- * @property int                                                        $commented_count  评论数量
- * @property int                                                        $liked_count      点赞数量
- * @property int                                                        $bookmarked_count 收藏数量
- * @property int                                                        $viewed_count     收藏数量
- * @property \Illuminate\Support\Carbon|null                            $deleted_at
- * @property \Illuminate\Support\Carbon|null                            $created_at
- * @property \Illuminate\Support\Carbon|null                            $updated_at
- * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[] $tags
- * @property int|null                                                   $tags_count
- * @property \App\User                                                  $user
+ * @property int                                                            $id
+ * @property int                                                            $user_id
+ * @property string                                                         $title            标题
+ * @property string                                                         $description      描述
+ * @property string|null                                                    $thumbnail        缩略图
+ * @property string                                                         $seo_words        用作于seo的词
+ * @property string|null                                                    $post_index       文章目录
+ * @property string                                                         $content          内容
+ * @property int                                                            $status           发布状态，1位发布，2为草稿
+ * @property int                                                            $privacy          权限，1为公开，2为仅自己可见
+ * @property int                                                            $commented_count  评论数量
+ * @property int                                                            $liked_count      点赞数量
+ * @property int                                                            $bookmarked_count 收藏数量
+ * @property int                                                            $viewed_count     收藏数量
+ * @property \Illuminate\Support\Carbon|null                                $deleted_at
+ * @property \Illuminate\Support\Carbon|null                                $created_at
+ * @property \Illuminate\Support\Carbon|null                                $updated_at
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\PostTag[] $postTags
+ * @property int|null                                                       $post_tags_count
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[]     $tags
+ * @property int|null                                                       $tags_count
+ * @property \App\User                                                      $user
  *
  * @method static bool|null forceDelete()
  * @method static \Illuminate\Database\Eloquent\Builder|\App\Models\Post newModelQuery()
@@ -106,5 +108,10 @@ class Post extends Model
             'status' => self::STATUS_PUBLISH,
             'privacy' => self::PRIVACY_PUBLIC,
         ]);
+    }
+
+    public function postTags()
+    {
+        return $this->hasMany(PostTag::class);
     }
 }

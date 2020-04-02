@@ -9,9 +9,23 @@ use Illuminate\Notifications\Notifiable;
 /**
  * App\User.
  *
- * @property mixed|string                                                                                              $avatar
- * @property mixed                                                                                                     $introduction
- * @property mixed                                                                                                     $title
+ * @property int                                                                                                       $id
+ * @property string                                                                                                    $name
+ * @property string                                                                                                    $nickname
+ * @property string|null                                                                                               $email               邮箱
+ * @property string|null                                                                                               $email_verified_at
+ * @property string                                                                                                    $password
+ * @property string                                                                                                    $password_salt       密码加密的salt
+ * @property string|null                                                                                               $remember_token
+ * @property string|null                                                                                               $phone               电话
+ * @property int                                                                                                       $gender              0为女， 1为男，2未设定
+ * @property int                                                                                                       $login_type          0为不使用第三方账号登录，1为github登录
+ * @property mixed|string                                                                                              $avatar              头像
+ * @property string|null                                                                                               $title               标题
+ * @property string|null                                                                                               $introduction        个人简介
+ * @property array|null                                                                                                $carousel            轮播图+跳转地址
+ * @property \Illuminate\Support\Carbon|null                                                                           $created_at
+ * @property \Illuminate\Support\Carbon|null                                                                           $updated_at
  * @property \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
  * @property int|null                                                                                                  $notifications_count
  * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Post[]                                               $posts
@@ -30,8 +44,6 @@ class User extends Authenticatable
 
     //登录方式为github登录
     const LOGIN_TYPE_GITHUB = 1;
-
-    protected $table = 't_users';
 
     protected $hidden = ['password'];
 

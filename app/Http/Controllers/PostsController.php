@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PostRequest;
 use App\Models\Post;
 use App\Repository\Repositories\PostRepository;
 use App\Repository\Repositories\UserRepository;
@@ -9,6 +10,7 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -23,15 +25,12 @@ class PostsController extends Controller
 
     /**
      * 文章显示接口.
-     *
-     * @param UserRepository $userRepository
-     * @param Request $request
-     * @param int $id
+     * @param  UserRepository  $userRepository
+     * @param  Request  $request
+     * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
-     *
      * @api {GET} /post/{id} 文章显示接口
-     *
      * @apiSuccess {object[]} data 返回结果
      * @apiSuccess {int} data.id 文章的id
      * @apiSuccess {int} data.user_id 文章的userId
@@ -45,7 +44,6 @@ class PostsController extends Controller
      * @apiSuccess {string} data.liked_count  点赞数
      * @apiSuccess {string} data.bookmarked_count 收藏数
      * @apiSuccess {string} data.viewed_count 阅读数
-     *
      * @apiSuccess {object} data.user 文章的用户
      * @apiSuccess {int} data.user.id 文章的用户id
      * @apiSuccess {string} data.user.name 文章的用户名字
@@ -78,16 +76,13 @@ class PostsController extends Controller
 
     /**
      * @apiGroup post
-     *
-     * @param Request $request
+     * @param  Request  $request
      * @return \Illuminate\Http\JsonResponse
-     *
      * @api {GET} /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
      * @apiParam {int} limit 限制多少页
      * @apiParam {int} page 第几页，默认第一页开始
-     *
      * @apiSuccess {object[]} list 文章列表对象
      * @apiSuccess {int} list.id 文章的id
      * @apiSuccess {string} list.title 文章的title
@@ -99,56 +94,43 @@ class PostsController extends Controller
      * @apiSuccess {string} list.liked_count  点赞数
      * @apiSuccess {string} list.bookmarked_count 收藏数
      * @apiSuccess {string} list.viewed_count 阅读数
-     *
      * @apiSuccess {bool} next 文章下一页, true 则有下一页，false则没有
      */
-    public function postsList(Request $request)
+    public function postsList(Request $request, PostRepository $postRepository)
     {
-        $request->validate([
-            'target_id' => 'int',
-            'target_type' => 'in:'.PostRepository::TARGET_TYPE_USER.','.PostRepository::TARGET_TYPE_TAG,
-            'limit' => 'int',
-            'page' => 'int',
+        $this->validate($request, [
+            'target_id' => 'integer',
+            'target_type' => [Rule::in([PostRepository::TARGET_TYPE_TAG, PostRepository::TARGET_TYPE_USER])],
+            'limit' => ['integer', 'max:100', 'min:1'],
+            'page' => ['integer', 'min:1'],
         ]);
 
         $targetType = $request->input('target_type');
         $targetId = $request->input('target_id');
-        $limit = min(abs($request->input('limit', 10)), 100);
-        $page = abs($request->input('page', 1));
+        $limit = $request->input('limit', 10);
+        $page = $request->input('page', 1);
 
         $userId = Auth::id();
 
-        $options = [
-            'limit' => $limit,
-            'page' => $page,
-            'user_id' => $userId,
-        ];
-
-        $data = $this->postRepository->getPosts($targetType, $targetId, $options);
-
-        $result = [];
-        $resultPostKeys = ['id', 'title', 'description', 'thumbnail',  'updated_at', 'user_id', 'status', 'commented_count', 'liked_count', 'bookmarked_count', 'viewed_count'];
-        foreach ($data['data'] as $datum) {
-            $tmp = [];
-            foreach ($resultPostKeys as $resultPostKey) {
-                $tmp[$resultPostKey] = $datum->$resultPostKey;
-            }
-            $result[] = $tmp;
+        switch ($targetType) {
+            case PostRepository::TARGET_TYPE_USER:
+                $paginate = $postRepository->getPostsByUser($userId, $page, $limit);
+                break;
+            default:
+                $paginate = $postRepository->getPostsByPostTags($userId, $targetId, $page, $limit);
+                break;
         }
 
-        return $this->buildReturnData(['list' => $result, 'next' => $data['next']]);
+        return $this->buildReturnData($this->formatPaginate($paginate));
     }
 
     /**
      * 创建文章接口.
-     *
-     * @param RateLimiter $rateLimiter 频率限制类
-     * @param Post $request 情报请求过滤
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @apiGroup post
-     *
      * @throws \Throwable
+     * @param  Post  $request  情报请求过滤
+     * @return \Illuminate\Http\JsonResponse
+     * @apiGroup post
+     * @param  RateLimiter  $rateLimiter  频率限制类
      * @api {POST} /post 创建文章接口
      * @apiParam {string} title 文章标题
      * @apiParam {string} description  文章描述，如果不填则会使用文章内容去除html标签的前100个字符
@@ -158,7 +140,6 @@ class PostsController extends Controller
      * @apiParam {string} tag_ids tag的id，用英文逗号分开
      * @apiParam {int} status 文章状态，默认为发布状态
      * @apiParam {int} privacy 文章权限，默认为所有人可读状态
-     *
      * @apiSuccess {int} code 自定义的code返回
      * @apiSuccess {string} message 信息返回
      * @apiSuccess {object[]} data 返回结果
@@ -174,7 +155,7 @@ class PostsController extends Controller
      * @apiSuccess {int} data.tags.id tag的id
      * @apiSuccess {string} data.tags.name
      */
-    public function create(RateLimiter $rateLimiter, Post $request)
+    public function create(RateLimiter $rateLimiter, PostRequest $request)
     {
         $userId = Auth::id();
 
@@ -224,21 +205,18 @@ class PostsController extends Controller
     }
 
     /**
-     * @param RateLimiter $rateLimiter 频率限制
-     * @param Request $request 请求
-     * @param int $id
-     * @return \Illuminate\Http\JsonResponse
-     *
-     * @apiGroup post
-     *
      * @throws \Throwable
+     * @param  Request  $request  请求
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     * @apiGroup post
+     * @param  RateLimiter  $rateLimiter  频率限制
      * @api {PATCH} /post/{$id} 文章更新
      * @apiParam {string} title 标题，可不传
      * @apiParam {int} privacy 权限，只能由隐私改成公开， 2 ==> 1, 否则会403异常
      * @apiParam {string} content 内容，必须字段
      * @apiParam {string} post_index 文章目录，可不传
      * @apiParam {string} tag_ids 文章关联的tag_ids,英文逗号隔开，必须字段
-     *
      * @apiSuccess {bool} success 是否成功
      */
     public function update(RateLimiter $rateLimiter, Request $request, int $id)
@@ -287,11 +265,9 @@ class PostsController extends Controller
     }
 
     /**
-     * @param int $id 文章的id
+     * @param  int  $id  文章的id
      * @return \Illuminate\Http\JsonResponse
-     *
      * @apiGroup post
-     *
      * @api {DELETE} /post/{$id} 文章删除
      * @apiSuccess {bool} success 是否成功
      */
