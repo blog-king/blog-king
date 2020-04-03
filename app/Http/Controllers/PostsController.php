@@ -9,7 +9,6 @@ use App\Repository\Repositories\UserRepository;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -26,9 +25,9 @@ class PostsController extends Controller
     /**
      * 文章显示接口.
      *
-     * @param UserRepository $userRepository
-     * @param Request        $request
-     * @param int            $id
+     * @param  UserRepository  $userRepository
+     * @param  Request  $request
+     * @param  int  $id
      *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
@@ -80,7 +79,7 @@ class PostsController extends Controller
     /**
      * @apiGroup post
      *
-     * @param Request $request
+     * @param  Request  $request
      *
      * @return \Illuminate\Http\JsonResponse
      *
@@ -136,8 +135,8 @@ class PostsController extends Controller
      * @throws \Throwable
      * @apiGroup post
      *
-     * @param \App\Http\Requests\PostRequest $request     情报请求过滤
-     * @param RateLimiter                    $rateLimiter 频率限制类
+     * @param  \App\Http\Requests\PostRequest  $request  情报请求过滤
+     * @param  RateLimiter  $rateLimiter  频率限制类
      *
      * @return \Illuminate\Http\JsonResponse
      *
@@ -178,21 +177,16 @@ class PostsController extends Controller
         } else {
             $tagIds = array_filter(explode(',', $request->input('tag_ids')));
 
-            try {
-                $post = $this->postRepository->create($userId, $request->only([
-                    'title',
-                    'description',
-                    'content',
-                    'seo_words',
-                    'post_index',
-                    'status',
-                    'privacy',
-                ]), $tagIds);
-                $result = $this->buildReturnData($post);
-            } catch (\Exception $e) {
-                Log::warning('create post error '.$e->getMessage());
-                $result = $this->buildReturn500(0, __('post.create_error'));
-            }
+            $post = $this->postRepository->create($userId, $request->only([
+                'title',
+                'description',
+                'content',
+                'seo_words',
+                'post_index',
+                'status',
+                'privacy',
+            ]), $tagIds);
+            $result = $this->buildReturnData($post);
         }
 
         return $result;
@@ -201,13 +195,13 @@ class PostsController extends Controller
     /**
      * @throws \Throwable
      *
-     * @param Request $request 请求
-     * @param int     $id
+     * @param  Request  $request  请求
+     * @param  int  $id
      *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
      *
-     * @param RateLimiter $rateLimiter 频率限制
+     * @param  RateLimiter  $rateLimiter  频率限制
      *
      * @api {PATCH} /post/{$id} 文章更新
      * @apiParam {string} title 标题，可不传
@@ -245,7 +239,7 @@ class PostsController extends Controller
     }
 
     /**
-     * @param int $id 文章的id
+     * @param  int  $id  文章的id
      *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
