@@ -3,6 +3,7 @@
 namespace App\Repository\Interfaces;
 
 use App\Models\Post;
+use App\User;
 use Illuminate\Database\Eloquent\Collection;
 
 interface PostInterface
@@ -50,13 +51,13 @@ interface PostInterface
      * 更新一个文章.
      *
      * @param int   $id
-     * @param int   $userId
+     * @param User  $user
      * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
      *
      * @return bool
      */
-    public function update(int $id, int $userId, array $data, array $tagIds): bool;
+    public function update(User $user, int $id, array $data, array $tagIds): bool;
 
     /**
      * 获取文章列表，根据文章属性，如userId,tagId.
