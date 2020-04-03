@@ -73,22 +73,7 @@ class PostRepository implements PostInterface
             $post->user_id = $userId;
             $post->save();
 
-            if (!empty($tagIds)) {
-                $now = date('Y-m-d H:i:s');
-                $bulkInsetValues = Tag::query()
-                    ->whereIn('id', $tagIds)
-                    ->get()
-                    ->map(function (Tag $tag) use ($post, $now) {
-                        return [
-                            'post_id' => $post->id,
-                            'tag_id' => $tag->id,
-                            'created_at' => $now,
-                            'name' => $tag->name,
-                            'user_id' => $post->user_id,
-                        ];
-                    })->toArray();
-                PostTag::query()->insert($bulkInsetValues);
-            }
+            $this->syncTags($post, $tagIds, true);
 
             return $post;
         });
@@ -105,21 +90,18 @@ class PostRepository implements PostInterface
      *
      * @param int $id
      */
-    public function delete(int $id, int $userId): bool
+    public function delete(User $user, int $id): bool
     {
-        //$post = $this->getPostById($id);
-        $post = Post::query()->find($id);
-        if (empty($post)) {
-            throw new \Exception('Not Found.', 404);
+        /** @var Post $post */
+        $post = Post::query()->findOrFail($id);
+
+        if ($user->can('delete', $post)) {
+            $post->delete();
+
+            return true;
         }
 
-        if ($post instanceof Post && $post->user_id != $userId) {
-            throw new \Exception('FORBIDDEN.', 403);
-        }
-
-        $post->delete();
-
-        return true;
+        throw new ForbiddenException(__('post.403_not_your_post'));
     }
 
     /**
@@ -151,14 +133,25 @@ class PostRepository implements PostInterface
         throw new ForbiddenException(__('post.403_not_your_post'));
     }
 
-    public function syncTags(Post $post, array $tagIds)
+    /**
+     * 同步文章标签.
+     *
+     * @param \App\Models\Post $post
+     * @param array            $tagIds
+     * @param bool             $create
+     */
+    public function syncTags(Post $post, array $tagIds, bool $create = false)
     {
-        // 把多余的 tags 删掉
-        $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
-        $diffIds = array_diff(
-            $tagIds,
-            $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
-        ); // 看看 tags 的 diff
+        if (!$create) {
+            // 把多余的 tags 删掉
+            $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
+            $diffIds = array_diff(
+                $tagIds,
+                $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
+            ); // 看看 tags 的 diff
+        } else {
+            $diffIds = $tagIds;
+        }
 
         if (!empty($diffIds)) { // 如果 tags 还有区别，就把缺少的补上去
             $now = date('Y-m-d H:i:s');

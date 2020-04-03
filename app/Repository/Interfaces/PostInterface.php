@@ -40,12 +40,12 @@ interface PostInterface
     /**
      * 删除一篇文章.
      *
-     * @param int $id
-     * @param int $userId
+     * @param int  $id
+     * @param User $user
      *
      * @return bool
      */
-    public function delete(int $id, int $userId): bool;
+    public function delete(User $user, int $id): bool;
 
     /**
      * 更新一个文章.
