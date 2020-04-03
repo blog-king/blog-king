@@ -10,7 +10,6 @@ use App\Repository\Interfaces\PostInterface;
 use App\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
@@ -67,28 +66,21 @@ class PostRepository implements PostInterface
      */
     public function create(int $userId, array $data, array $tagIds = []): ?Post
     {
-        $post = Model::resolveConnection()->transaction(function () use ($userId, $data, $tagIds) {
-            $post = new Post();
-            $post->fill($data);
-            $post->user_id = $userId;
-            $post->save();
+        $post = new Post();
+        $post->fill($data);
+        $post->user_id = $userId;
+        $post->save();
 
-            $this->syncTags($post, $tagIds, true);
+        $this->syncTags($post, $tagIds, true);
 
-            return $post;
-        });
-        //创建一篇文章后将缓存预热一次
-        return $this->getPostById($post->id);
+        return $post;
     }
 
     /**
-     * @throws \Exception
-     *
-     * @param int $userId
+     * @param User $user
+     * @param int  $id
      *
      * @return bool
-     *
-     * @param int $id
      */
     public function delete(User $user, int $id): bool
     {
@@ -142,15 +134,15 @@ class PostRepository implements PostInterface
      */
     public function syncTags(Post $post, array $tagIds, bool $create = false)
     {
-        if (!$create) {
+        if ($create) {
+            $diffIds = $tagIds;
+        } else {
             // 把多余的 tags 删掉
             $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
             $diffIds = array_diff(
                 $tagIds,
                 $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
             ); // 看看 tags 的 diff
-        } else {
-            $diffIds = $tagIds;
         }
 
         if (!empty($diffIds)) { // 如果 tags 还有区别，就把缺少的补上去
