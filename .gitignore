@@ -19,3 +19,4 @@ cghooks.lock
 .php_cs.cache
 public/css
 public/js
+.phpstorm.meta.php

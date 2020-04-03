@@ -2,11 +2,12 @@
 
 namespace App\Repository\Repositories;
 
+use App\Exceptions\ForbiddenException;
 use App\Models\Post;
-use App\Models\PostHistory;
 use App\Models\PostTag;
 use App\Models\Tag;
 use App\Repository\Interfaces\PostInterface;
+use App\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -124,67 +125,58 @@ class PostRepository implements PostInterface
     /**
      * 更新一个文章.
      *
-     * @throws \Exception
-     * @throws \Throwable
+     * @throws
+     * @throws \App\Exceptions\ForbiddenException
      *
      * @param array $data   eg: ['title' => xxx, 'content' => xxx, 'privacy' => 1]
      * @param array $tagIds eg: [1,2,3]
      *
      * @return bool
      *
-     * @param int $id
-     * @param int $userId
+     * @param \App\User $user
+     * @param int       $id
      */
-    public function update(int $id, int $userId, array $data, array $tagIds): bool
+    public function update(User $user, int $id, array $data, array $tagIds): bool
     {
         /** @var Post $post */
-        $post = Post::query()->find($id);
+        $post = Post::query()->findOrFail($id);
 
-        if (empty($post)) {
-            throw new \Exception('Not Found.', 404);
-        }
-
-        if ($post instanceof Post && $post->user_id != $userId) {
-            throw new \Exception('FORBIDDEN.', 403);
-        }
-
-        return Model::resolveConnection()->transaction(function () use ($id, $userId, $data, $tagIds, $post) {
-            //将文章写入历史记录保存
-            $postHistory = new PostHistory();
-            $postHistory->post_id = $post->id;
-            $postHistory->title = $post->title;
-            $postHistory->content = $post->content;
-            $postHistory->save();
-
+        if ($user->can('update', $post)) {
             $post->update($data);
-
-            $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
-            $diffIds = array_diff(
-                $tagIds,
-                $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
-            );
-
-            if (!empty($diffIds)) {
-                $now = date('Y-m-d H:i:s');
-
-                $addTags = Tag::query()->whereIn('id', $diffIds)->get()
-                    ->map(function (Tag $tag) use ($post, $now) {
-                        return [
-                            'post_id' => $post->id,
-                            'tag_id' => $tag->id,
-                            'created_at' => $now,
-                            'name' => $tag->name,
-                            'user_id' => $post->user_id,
-                        ];
-                    })->toArray();
-
-                if (!empty($addTags)) {
-                    PostTag::query()->insert($addTags);
-                }
-            }
+            $this->syncTags($post, $tagIds);
 
             return true;
-        });
+        }
+
+        throw new ForbiddenException(__('post.403_not_your_post'));
+    }
+
+    public function syncTags(Post $post, array $tagIds)
+    {
+        // 把多余的 tags 删掉
+        $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
+        $diffIds = array_diff(
+            $tagIds,
+            $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
+        ); // 看看 tags 的 diff
+
+        if (!empty($diffIds)) { // 如果 tags 还有区别，就把缺少的补上去
+            $now = date('Y-m-d H:i:s');
+            $addTags = Tag::query()->whereIn('id', $diffIds)->get()
+                ->map(function (Tag $tag) use ($post, $now) {
+                    return [
+                        'post_id' => $post->id,
+                        'tag_id' => $tag->id,
+                        'created_at' => $now,
+                        'name' => $tag->name,
+                        'user_id' => $post->user_id,
+                    ];
+                })->toArray();
+
+            if (!empty($addTags)) {
+                PostTag::query()->insert($addTags);
+            }
+        }
     }
 
     /**

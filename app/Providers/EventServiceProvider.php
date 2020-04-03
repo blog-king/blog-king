@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\PostDeleted;
 use App\Events\PostUpdated;
 use App\Listeners\PostDeleteCacheListener;
+use App\Listeners\PostUpdatedListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -25,6 +26,7 @@ class EventServiceProvider extends ServiceProvider
         //文章更新监听
         PostUpdated::class => [
             PostDeleteCacheListener::class,
+            PostUpdatedListener::class,
         ],
 
         //文章删除监听

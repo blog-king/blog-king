@@ -73,7 +73,6 @@ class PostsTest extends TestCase
         /** @var Post $post */
         $post = $posts->first();
         $this->post = $post;
-
     }
 
     /**
@@ -106,43 +105,39 @@ class PostsTest extends TestCase
     public function testPostRepositoryForUpdate()
     {
         $tags = factory(Tag::class, 3)->create([
-            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1,
         ]);
         $tagIds = $tags->pluck('id')->all();
 
         $oldTagIds = $this->post->tags->pluck('id')->all();
         $data = $this->genUpdatePostData();
         //完全修改tagIds
-        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id, $data, $tagIds));
+        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id, $data, $tagIds));
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($updatedPost->title, $data['title']);
         $this->assertSame($updatedPost->content, $data['content']);
         $this->assertSame($tagIds, $updatedPost->postTags()->get()->pluck('tag_id')->all());
         $this->assertDatabaseHas('post_histories',
-            ['post_id' => $this->post->id, 'title' => $this->post->title, 'content' => $this->post->content]);
+            ['post_id' => $this->post->id, 'title' => $updatedPost->title, 'content' => $updatedPost->content]);
 
         //不修改tagIds
-        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id,
+        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id,
             $this->genUpdatePostData(), $oldTagIds));
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($oldTagIds, $updatedPost->tags->pluck('id')->all());
 
         //修改部分tagIds
         $updatedTagIds = [$oldTagIds[0], $tagIds[0]];
-        $this->assertTrue($this->postRepository->update($this->post->id, $this->postOwnerUser->id,
+        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id,
             $this->genUpdatePostData(), $updatedTagIds));
         $updatedPost = $this->postRepository->getPostById($this->post->id);
         $this->assertSame($updatedTagIds, $updatedPost->tags->pluck('id')->all());
-
-        $this->expectException(\Exception::class);
-        $this->expectExceptionCode(403);
-        $this->postRepository->update($this->post->id, $this->guestUser->id, $data, $tagIds);
     }
 
     public function testApiForUpdate()
     {
         $tags = factory(Tag::class, 3)->create([
-            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1,
         ]);
         $tagIds = [];
         $tags->each(function (Tag $tag) use (&$tagIds) {
@@ -194,6 +189,7 @@ class PostsTest extends TestCase
 
     /**
      * 生成修改文章的内容.
+     *
      * @return array
      */
     private function genUpdatePostData()
@@ -210,7 +206,7 @@ class PostsTest extends TestCase
     public function testApiForCreate()
     {
         $tags = factory(Tag::class, 3)->create([
-            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1
+            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1,
         ]);
         $tagIds = [];
         $tags->each(function (Tag $tag) use (&$tagIds) {
@@ -310,7 +306,7 @@ class PostsTest extends TestCase
             ->get(route('post-api-list', [
                 'target_type' => PostRepository::TARGET_TYPE_USER,
                 'target_id' => $this->postOwnerUser->id,
-                'limit' => 1
+                'limit' => 1,
             ]));
 
         $response->assertOk();

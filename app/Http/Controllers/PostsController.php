@@ -25,11 +25,14 @@ class PostsController extends Controller
 
     /**
      * 文章显示接口.
-     * @param  UserRepository  $userRepository
-     * @param  Request  $request
-     * @param  int  $id
+     *
+     * @param UserRepository $userRepository
+     * @param Request        $request
+     * @param int            $id
+     *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
+     *
      * @api {GET} /post/{id} 文章显示接口
      * @apiSuccess {object[]} data 返回结果
      * @apiSuccess {int} data.id 文章的id
@@ -76,8 +79,11 @@ class PostsController extends Controller
 
     /**
      * @apiGroup post
-     * @param  Request  $request
+     *
+     * @param Request $request
+     *
      * @return \Illuminate\Http\JsonResponse
+     *
      * @api {GET} /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
@@ -126,11 +132,15 @@ class PostsController extends Controller
 
     /**
      * 创建文章接口.
+     *
      * @throws \Throwable
-     * @param  Post  $request  情报请求过滤
-     * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
-     * @param  RateLimiter  $rateLimiter  频率限制类
+     *
+     * @param \App\Http\Requests\PostRequest $request     情报请求过滤
+     * @param RateLimiter                    $rateLimiter 频率限制类
+     *
+     * @return \Illuminate\Http\JsonResponse
+     *
      * @api {POST} /post 创建文章接口
      * @apiParam {string} title 文章标题
      * @apiParam {string} description  文章描述，如果不填则会使用文章内容去除html标签的前100个字符
@@ -206,11 +216,15 @@ class PostsController extends Controller
 
     /**
      * @throws \Throwable
-     * @param  Request  $request  请求
-     * @param  int  $id
+     *
+     * @param Request $request 请求
+     * @param int     $id
+     *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
-     * @param  RateLimiter  $rateLimiter  频率限制
+     *
+     * @param RateLimiter $rateLimiter 频率限制
+     *
      * @api {PATCH} /post/{$id} 文章更新
      * @apiParam {string} title 标题，可不传
      * @apiParam {int} privacy 权限，只能由隐私改成公开， 2 ==> 1, 否则会403异常
@@ -221,9 +235,9 @@ class PostsController extends Controller
      */
     public function update(RateLimiter $rateLimiter, Request $request, int $id)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
 
-        $postRateLimitKey = "post-update-rate-limit-{$userId}";
+        $postRateLimitKey = "post-update-rate-limit-{$user->id}";
         $rateLimiter->hit($postRateLimitKey);
 
         if ($rateLimiter->tooManyAttempts($postRateLimitKey, 2)) {
@@ -236,38 +250,22 @@ class PostsController extends Controller
             throw new HttpException(403, __('post.403_can_not_update_post_privacy'));
         }
 
-        $title = $request->input('title');
         //todo 检查是否包含当前的tag，是否捏造tagId
         $tagIds = (array) array_filter(explode(',', $request->input('tag_ids')));
 
-        //todo 需要过滤content 防止注入
-        $content = $request->input('content');
+        $data = $request->only(['content', 'title']);
 
-        $data['content'] = $content;
-        $title && $data['title'] = $title;
-        try {
-            $message = null;
-            $result = ['success' => $this->postRepository->update($id, $userId, $data, $tagIds)];
-
-            return $this->buildReturnData($result);
-        } catch (\Exception $e) {
-            $code = $e->getCode();
-            if (404 === $code) {
-                $message = __('post.404');
-            } elseif (403 == $code) {
-                $message = __('post.403_not_your_post');
-            } else {
-                Log::warning('update post error '.$e->getMessage());
-                $message = __('post.500_update_post');
-            }
-            throw new HttpException($code, $message);
-        }
+        return $this->buildReturnData([
+            'success' => $this->postRepository->update($user, $id, $data, $tagIds),
+        ]);
     }
 
     /**
-     * @param  int  $id  文章的id
+     * @param int $id 文章的id
+     *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
+     *
      * @api {DELETE} /post/{$id} 文章删除
      * @apiSuccess {bool} success 是否成功
      */
