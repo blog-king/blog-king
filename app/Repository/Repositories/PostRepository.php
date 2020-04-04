@@ -40,9 +40,16 @@ class PostRepository implements PostInterface
         });
     }
 
-    public function getPostsByIds(array $ids): Collection
+    public function getPostsByIds(array $ids, bool $filterUnvisible = true): Collection
     {
-        $collection = Post::query()->with('tags')->whereIn('id', $ids)->get();
+        $collection = Post::query()
+            ->with('tags')
+            ->when($filterUnvisible, function ($query) {
+                /** @var Post $query */
+                $query->visible();
+            })
+            ->whereIn('id', $ids)
+            ->get();
         $collection->each(function (Post $post) {
             if (Post::PRIVACY_PUBLIC == $post->privacy) {
                 Cache::add($this->genPostCacheKeyById($post->id), $post, now()->addHour());
@@ -133,7 +140,7 @@ class PostRepository implements PostInterface
      *
      * @return bool
      *
-     * @param \App\User $user
+     * @param User $user
      * @param int       $id
      */
     public function update(User $user, int $id, array $data, array $tagIds): bool
@@ -179,80 +186,6 @@ class PostRepository implements PostInterface
         }
     }
 
-    /**
-     * @param string $targetType eg: tag, user
-     * @param int    $targetId
-     * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
-     *
-     * @return array ['data' => ['Post', 'Post'], 'next' => bool]
-     */
-    public function getPosts(string $targetType, int $targetId, array $options = []): array
-    {
-        $limit = $options['limit'];
-        $page = $options['page'];
-        $next = true;
-        $userId = $options['user_id'];
-        switch ($targetType) {
-            case self::TARGET_TYPE_TAG:
-                while (true) {
-                    $postIds = PostTag::query()
-                        ->where(['tag_id' => $targetId])
-                        ->take($limit + 1) //这里 +1 方便计算下一页
-                        ->skip(($page - 1) * $limit)
-                        ->orderByDesc('created_at')
-                        ->pluck('post_id')
-                        ->all();
-                    $posts = $this->getPostsByIds($postIds);
-
-                    $count = $posts->count();
-                    $count <= $limit && $next = false;
-
-                    $result = [];
-                    $i = 0;
-                    /** @var Post $post */
-                    foreach ($posts as $post) {
-                        if ($post->user_id == $userId && (Post::PRIVACY_HIDDEN == $post->privacy || Post::STATUS_DRAFT == $post->status)) {
-                            continue;
-                        }
-                        if ($i == $limit) {
-                            break;
-                        }
-                        ++$i;
-                        $result[] = $post;
-                    }
-                    //拿够一页的数量则中断返回
-                    if ($i >= $limit || $count <= $limit) {
-                        return ['data' => $result, 'next' => $next];
-                    }
-                }
-                break;
-            case self::TARGET_TYPE_USER:
-                $posts = Post::query()
-                    ->with('tags')
-                    ->where(['user_id' => $targetId])
-                    ->when($targetId != $userId, function (Builder $query) {
-                        $query->where(['privacy' => Post::PRIVACY_PUBLIC, 'status' => Post::STATUS_PUBLISH]);
-                    })
-                    ->take($limit + 1) //这里 +1 方便计算下一页
-                    ->skip(($page - 1) * $limit)
-                    ->orderByDesc('created_at')
-                    ->get();
-
-                $result = [];
-                $posts->count() <= $limit && $next = false;
-                $i = 0;
-                foreach ($posts as $post) {
-                    $result[] = $post;
-                    ++$i;
-                    if ($i >= $limit) {
-                        break;
-                    }
-                }
-
-                return ['data' => $result, 'next' => $next];
-                break;
-        }
-    }
 
     /**
      * 通过 postTagId 获取文章列表.

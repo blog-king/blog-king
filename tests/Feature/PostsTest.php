@@ -99,40 +99,6 @@ class PostsTest extends TestCase
         $this->assertNotEmpty($result->data->seo_words);
     }
 
-    /**
-     * @throws \Exception
-     */
-    public function testPostRepositoryForUpdate()
-    {
-        $tags = factory(Tag::class, 3)->create([
-            'parent_id' => $this->parentTag->id, 'level' => $this->parentTag->level + 1,
-        ]);
-        $tagIds = $tags->pluck('id')->all();
-
-        $oldTagIds = $this->post->tags->pluck('id')->all();
-        $data = $this->genUpdatePostData();
-        //完全修改tagIds
-        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id, $data, $tagIds));
-        $updatedPost = $this->postRepository->getPostById($this->post->id);
-        $this->assertSame($updatedPost->title, $data['title']);
-        $this->assertSame($updatedPost->content, $data['content']);
-        $this->assertSame($tagIds, $updatedPost->postTags()->get()->pluck('tag_id')->all());
-        $this->assertDatabaseHas('post_histories',
-            ['post_id' => $this->post->id, 'title' => $updatedPost->title, 'content' => $updatedPost->content]);
-
-        //不修改tagIds
-        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id,
-            $this->genUpdatePostData(), $oldTagIds));
-        $updatedPost = $this->postRepository->getPostById($this->post->id);
-        $this->assertSame($oldTagIds, $updatedPost->tags->pluck('id')->all());
-
-        //修改部分tagIds
-        $updatedTagIds = [$oldTagIds[0], $tagIds[0]];
-        $this->assertTrue($this->postRepository->update($this->postOwnerUser, $this->post->id,
-            $this->genUpdatePostData(), $updatedTagIds));
-        $updatedPost = $this->postRepository->getPostById($this->post->id);
-        $this->assertSame($updatedTagIds, $updatedPost->tags->pluck('id')->all());
-    }
 
     public function testApiForUpdate()
     {
@@ -236,62 +202,6 @@ class PostsTest extends TestCase
         //超频请求
         $response = $this->actingAs($this->postOwnerUser)->post(route('post-api-create'), $data);
         $response->assertStatus(429);
-    }
-
-    public function testRepositoryForUserList()
-    {
-        factory(Post::class, 10)->create([
-            'privacy' => Post::PRIVACY_PUBLIC,
-            'status' => Post::STATUS_PUBLISH,
-            'user_id' => $this->postOwnerUser->id,
-        ]);
-
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id,
-            ['limit' => 5, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
-        $this->assertSame(count($result['data']), 5);
-        $this->assertTrue($result['next']);
-
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->postOwnerUser->id,
-            ['limit' => 50, 'page' => 1, 'user_id' => $this->postOwnerUser->id]);
-        $this->assertFalse($result['next']);
-
-        //----------------------------------------------------------------------------------------///
-        //测试隐私文章
-        factory(Post::class, 10)->create([
-            'privacy' => Post::PRIVACY_HIDDEN,
-            'status' => Post::STATUS_PUBLISH,
-            'user_id' => $this->guestUser->id,
-        ]);
-
-        //隐私文章不是自己无法获取到
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id,
-            ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser2->id]);
-        $this->assertEmpty($result['data']);
-        $this->assertFalse($result['next']);
-
-        //自己能获取到自己的隐私文章，并测试分页零界点
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser->id,
-            ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser->id]);
-        $this->assertSame(count($result['data']), 10);
-        $this->assertFalse($result['next']);
-
-        //----------------------------------------------------------------------------------------///
-        //测试草稿文章
-        factory(Post::class, 10)->create([
-            'privacy' => Post::PRIVACY_PUBLIC,
-            'status' => Post::STATUS_DRAFT,
-            'user_id' => $this->guestUser2->id,
-        ]);
-        //草稿文章不是自己无法获取到
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser3->id,
-            ['limit' => 50, 'page' => 1, 'user_id' => $this->guestUser3->id]);
-        $this->assertEmpty($result['data']);
-        $this->assertFalse($result['next']);
-
-        //自己能获取自己的草稿文章
-        $result = $this->postRepository->getPosts(PostRepository::TARGET_TYPE_USER, $this->guestUser2->id,
-            ['limit' => 10, 'page' => 1, 'user_id' => $this->guestUser2->id]);
-        $this->assertSame(count($result['data']), 10);
     }
 
     public function testApiForUserList()

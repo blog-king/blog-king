@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ForbiddenException;
 use App\Http\Requests\PostRequest;
 use App\Models\Post;
 use App\Repository\Repositories\PostRepository;
 use App\Repository\Repositories\UserRepository;
+use App\User;
 use Illuminate\Cache\RateLimiter;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -27,8 +30,8 @@ class PostsController extends Controller
      * 文章显示接口.
      *
      * @param UserRepository $userRepository
-     * @param Request        $request
-     * @param int            $id
+     * @param Request $request
+     * @param int $id
      *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
@@ -84,6 +87,7 @@ class PostsController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      *
+     * @throws \Illuminate\Validation\ValidationException
      * @api {GET} /posts 文章列表api
      * @apiParam {int} target_id 目标类型的id,eg:用户类型,则target_id 为user_id
      * @apiParam {string} target_type 目标类型,eg:tag, user
@@ -133,13 +137,13 @@ class PostsController extends Controller
     /**
      * 创建文章接口.
      *
-     * @throws \Throwable
-     * @apiGroup post
-     *
-     * @param \App\Http\Requests\PostRequest $request     情报请求过滤
-     * @param RateLimiter                    $rateLimiter 频率限制类
+     * @param \App\Http\Requests\PostRequest $request 情报请求过滤
+     * @param RateLimiter $rateLimiter 频率限制类
      *
      * @return \Illuminate\Http\JsonResponse
+     *
+     * @throws \Throwable
+     * @apiGroup post
      *
      * @api {POST} /post 创建文章接口
      * @apiParam {string} title 文章标题
@@ -206,7 +210,7 @@ class PostsController extends Controller
                 $post = $this->postRepository->create($userId, $data, $tagIds);
                 $result = $this->buildReturnData($post);
             } catch (\Exception $e) {
-                Log::warning('create post error '.$e->getMessage());
+                Log::warning('create post error ' . $e->getMessage());
                 $result = $this->buildReturn500(0, __('post.create_error'));
             }
         }
@@ -215,15 +219,15 @@ class PostsController extends Controller
     }
 
     /**
-     * @throws \Throwable
-     *
      * @param Request $request 请求
-     * @param int     $id
+     * @param int $id
+     *
+     * @param RateLimiter $rateLimiter 频率限制
      *
      * @return \Illuminate\Http\JsonResponse
      * @apiGroup post
      *
-     * @param RateLimiter $rateLimiter 频率限制
+     * @throws \Throwable
      *
      * @api {PATCH} /post/{$id} 文章更新
      * @apiParam {string} title 标题，可不传
@@ -235,6 +239,7 @@ class PostsController extends Controller
      */
     public function update(RateLimiter $rateLimiter, Request $request, int $id)
     {
+        /** @var User $user */
         $user = Auth::user();
 
         $postRateLimitKey = "post-update-rate-limit-{$user->id}";
@@ -251,7 +256,7 @@ class PostsController extends Controller
         }
 
         //todo 检查是否包含当前的tag，是否捏造tagId
-        $tagIds = (array) array_filter(explode(',', $request->input('tag_ids')));
+        $tagIds = (array)array_filter(explode(',', $request->input('tag_ids')));
 
         $data = $request->only(['content', 'title']);
 
@@ -277,15 +282,13 @@ class PostsController extends Controller
 
             return $this->buildReturnData($result);
         } catch (\Exception $e) {
-            $data = ['success' => false];
             $code = $e->getCode();
-
-            if (404 === $code) {
+            if ($e instanceof ModelNotFoundException) {
                 $message = __('post.404');
-            } elseif (403 === $code) {
+            } elseif ($e instanceof ForbiddenException) {
                 $message = __('post.403_not_your_post');
             } else {
-                Log::warning('delete post error '.$e->getMessage());
+                Log::warning('delete post error ' . $e->getMessage());
                 $code = 500;
                 $message = __('post.500_delete_post');
             }
