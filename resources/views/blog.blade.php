@@ -16,6 +16,11 @@
 
     <link href="https://fonts.googleapis.com/css?family=Playfair+Display:700,900" rel="stylesheet">
     <link href="{{ asset('css/blog.css') }}" rel="stylesheet">
+    <script>
+        $(function () {
+            $('.carousel').carousel();
+        });
+    </script>
 @stop
 
 @section('content')
@@ -42,13 +47,15 @@
             </div>
         </header>
 
-        <div class="nav-scroller py-1 mb-2">
-            <nav class="nav d-flex justify-content-between">
-                @foreach($tags as $tag)
-                    <a class="p-2 text-muted" href="#">{{ $tag->name }}</a>
-                @endforeach
-            </nav>
-        </div>
+        @if ($tags->count() > 0)
+            <div class="nav-scroller py-1 mb-2">
+                <nav class="nav d-flex justify-content-between">
+                    @foreach($tags as $tag)
+                        <a class="p-2 text-muted" href="#">{{ $tag->name }}</a>
+                    @endforeach
+                </nav>
+            </div>
+        @endif
 
         @if (empty($user->carousel))
             <div class="jumbotron p-4 p-md-5 text-white rounded bg-dark">
@@ -59,59 +66,60 @@
                 </div>
             </div>
         @else
-            <div class="jumbotron p-4 p-md-5 text-white rounded bg-dark">
-                <div class="col-md-6 px-0">
-                    <h1 class="display-4 font-italic">Title of a longer featured blog post</h1>
-                    <p class="lead my-3">Multiple lines of text that form the lede, informing new readers quickly and
-                        efficiently about what’s most interesting in this post’s contents.</p>
-                    <p class="lead mb-0"><a href="#" class="text-white font-weight-bold">Continue reading...</a></p>
+            <div id="carouselCaptions" class="carousel slide mb-2" data-ride="carousel">
+                <ol class="carousel-indicators">
+                    @foreach($user->carousel as $key=>$item)
+                        <li data-target="#carouselCaptions"
+                            data-slide-to="0" {{ $key !== 0 ? '' : 'class="active"' }}></li>
+                    @endforeach
+                </ol>
+                <div class="carousel-inner">
+
+                    @foreach($user->carousel as $key=>$item)
+
+                        <div class="carousel-item {{ $key !== 0 ? '' : 'active' }}">
+                            {{--                            <div class="jumbotron p-4 p-md-5 text-white rounded bg-dark">--}}
+                            {{--                                <div class="col-md-6 px-0">--}}
+                            {{--                                    <h1 class="display-4 font-italic">{{ $user->title }}</h1>--}}
+                            {{--                                    <p class="lead my-3">{{ $user->introduction }}</p>--}}
+                            {{--                                    <p class="lead mb-0"><a href="#" class="text-white font-weight-bold">个人中心</a></p>--}}
+                            {{--                                </div>--}}
+                            {{--                            </div>--}}
+                            <img src="{{ $item['cover'] }}" class="d-block w-100 img-fluid" alt="{{ $item['title'] }}">
+                            <div class="carousel-caption d-none d-md-block">
+                                <a href="{{ $item['url'] }}" target="_blank" class="text-reset">
+                                    <h5>{{ $item['title'] }}</h5>
+                                    <p>{{ $item['body'] }}</p>
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+
                 </div>
+                <a class="carousel-control-prev" href="#carouselCaptions" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="carousel-control-next" href="#carouselCaptions" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
             </div>
         @endif
 
-        <div class="row mb-2">
-            <div class="col-md-6">
-                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                    <div class="col p-4 d-flex flex-column position-static">
-                        <strong class="d-inline-block mb-2 text-primary">World</strong>
-                        <h3 class="mb-0">Featured post</h3>
-                        <div class="mb-1 text-muted">Nov 12</div>
-                        <p class="card-text mb-auto">This is a wider card with supporting text below as a natural
-                            lead-in to
-                            additional content.</p>
-                        <a href="#" class="stretched-link">Continue reading</a>
-                    </div>
-                    <div class="col-auto d-none d-lg-block">
-                        <svg class="bd-placeholder-img" width="200" height="250" xmlns="http://www.w3.org/2000/svg"
-                             preserveAspectRatio="xMidYMid slice" focusable="false" role="img"
-                             aria-label="Placeholder: Thumbnail"><title>Placeholder</title>
-                            <rect width="100%" height="100%" fill="#55595c"/>
-                            <text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text>
-                        </svg>
-                    </div>
+        @if ($posts->count() > 1)
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    @component('components.post', ['post'=>$posts->get(0)])
+                    @endcomponent
+                </div>
+
+                <div class="col-md-6">
+                    @component('components.post', ['post'=>$posts->get(1), 'color'=>'success'])
+                    @endcomponent
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                    <div class="col p-4 d-flex flex-column position-static">
-                        <strong class="d-inline-block mb-2 text-success">Design</strong>
-                        <h3 class="mb-0">Post title</h3>
-                        <div class="mb-1 text-muted">Nov 11</div>
-                        <p class="mb-auto">This is a wider card with supporting text below as a natural lead-in to
-                            additional content.</p>
-                        <a href="#" class="stretched-link">Continue reading</a>
-                    </div>
-                    <div class="col-auto d-none d-lg-block">
-                        <svg class="bd-placeholder-img" width="200" height="250" xmlns="http://www.w3.org/2000/svg"
-                             preserveAspectRatio="xMidYMid slice" focusable="false" role="img"
-                             aria-label="Placeholder: Thumbnail"><title>Placeholder</title>
-                            <rect width="100%" height="100%" fill="#55595c"/>
-                            <text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endif
     </div>
 
     <main role="main" class="container">

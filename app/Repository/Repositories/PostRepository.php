@@ -278,6 +278,8 @@ class PostRepository implements PostInterface
             ->visible()
             ->with('postTags')
             ->where(['user_id' => $userId])
+            ->orderByDesc('sort')
+            ->orderByDesc('published_at')
             ->simplePaginate($perPage, ['*'], 'page', $page);
     }
 

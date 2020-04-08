@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null                                                    $post_index       文章目录
  * @property string                                                         $content          内容
  * @property int                                                            $status           发布状态，1位发布，2为草稿
+ * @property int                                                            $sort             排序，越大越靠前
+ * @property string                                                         $published_at     发布时间
  * @property int                                                            $privacy          权限，1为公开，2为仅自己可见
  * @property int                                                            $commented_count  评论数量
  * @property int                                                            $liked_count      点赞数量
@@ -29,6 +31,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null                                $deleted_at
  * @property \Illuminate\Support\Carbon|null                                $created_at
  * @property \Illuminate\Support\Carbon|null                                $updated_at
+ * @property mixed                                                          $tags_text
  * @property \Illuminate\Database\Eloquent\Collection|\App\Models\PostTag[] $postTags
  * @property int|null                                                       $post_tags_count
  * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Tag[]     $tags
@@ -107,11 +110,16 @@ class Post extends Model
         return $builder->where([
             'status' => self::STATUS_PUBLISH,
             'privacy' => self::PRIVACY_PUBLIC,
-        ]);
+        ])->where('published_at', '<=', now());
     }
 
     public function postTags()
     {
         return $this->hasMany(PostTag::class);
+    }
+
+    public function getTagsTextAttribute()
+    {
+        return $this->postTags->count() > 0 ? implode(',', $this->postTags->pluck('name')->toArray()) : '无标签';
     }
 }
