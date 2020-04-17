@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\ConcernCreated;
 use App\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,6 +25,10 @@ use Illuminate\Database\Eloquent\Model;
 class Concern extends Model
 {
     protected $guarded = [];
+
+    protected $dispatchesEvents = [
+        'created' => ConcernCreated::class,
+    ];
 
     public function user()
     {

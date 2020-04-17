@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Events\ConcernCreated;
 use App\Events\PostDeleted;
 use App\Events\PostUpdated;
+use App\Listeners\ConcernCreatedListener;
 use App\Listeners\PostDeleteCacheListener;
 use App\Listeners\PostUpdatedListener;
 use Illuminate\Auth\Events\Registered;
@@ -32,6 +34,11 @@ class EventServiceProvider extends ServiceProvider
         //文章删除监听
         PostDeleted::class => [
             PostDeleteCacheListener::class,
+        ],
+
+        //用户订阅监听
+        ConcernCreated::class => [
+            ConcernCreatedListener::class,
         ],
     ];
 
