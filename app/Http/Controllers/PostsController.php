@@ -9,7 +9,6 @@ use App\Repository\Repositories\UserRepository;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -176,39 +175,18 @@ class PostsController extends Controller
         if ($rateLimiter->tooManyAttempts($postRateLimitKey, 2)) {
             $result = $this->buildReturnData(null, 429);
         } else {
-            $title = $request->input('title');
-            $description = $request->input('description');
-            $seoWords = $request->input('seo_words');
-            $postIndex = $request->input('post_index');
-            $status = $request->input('status');
-            $privacy = $request->input('privacy');
-
-            //todo 检查是否包含当前的tag，是否捏造tagId
             $tagIds = array_filter(explode(',', $request->input('tag_ids')));
 
-            //todo 需要过滤content 防止注入
-            $content = $request->input('content');
-
-            if (empty($description)) {
-                $description = substr(strip_tags($content), 0, 100);
-            }
-
-            $data = [
-                'title' => $title,
-                'description' => $description,
-                'content' => $content,
-                'seo_words' => $seoWords,
-                'post_index' => $postIndex,
-                'status' => $status,
-                'privacy' => $privacy,
-            ];
-            try {
-                $post = $this->postRepository->create($userId, $data, $tagIds);
-                $result = $this->buildReturnData($post);
-            } catch (\Exception $e) {
-                Log::warning('create post error '.$e->getMessage());
-                $result = $this->buildReturn500(0, __('post.create_error'));
-            }
+            $post = $this->postRepository->create($userId, $request->only([
+                'title',
+                'description',
+                'content',
+                'seo_words',
+                'post_index',
+                'status',
+                'privacy',
+            ]), $tagIds);
+            $result = $this->buildReturnData($post);
         }
 
         return $result;
@@ -271,25 +249,10 @@ class PostsController extends Controller
      */
     public function delete(int $id)
     {
-        try {
-            $userId = Auth::id();
-            $result = ['success' => $this->postRepository->delete($id, $userId)];
+        $user = Auth::user();
 
-            return $this->buildReturnData($result);
-        } catch (\Exception $e) {
-            $data = ['success' => false];
-            $code = $e->getCode();
-
-            if (404 === $code) {
-                $message = __('post.404');
-            } elseif (403 === $code) {
-                $message = __('post.403_not_your_post');
-            } else {
-                Log::warning('delete post error '.$e->getMessage());
-                $code = 500;
-                $message = __('post.500_delete_post');
-            }
-            throw new HttpException($code, $message);
-        }
+        return $this->buildReturnData([
+            'success' => $this->postRepository->delete($user, $id),
+        ]);
     }
 }

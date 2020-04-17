@@ -5,7 +5,7 @@ namespace App\Repository\Repositories;
 use App\Models\UserGithubInformation;
 use App\Repository\Interfaces\UserInterface;
 use App\User;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -37,13 +37,11 @@ class UserRepository implements UserInterface
      * @return User
      *
      * @throws \Exception
+     * @throws \Throwable
      */
     public function createUserByGithub(array $githubUserData): User
     {
-        DB::beginTransaction();
-        try {
-            //创建新用户
-
+        return Model::resolveConnection()->transaction(function () use ($githubUserData) {
             $salt = Str::random(16);
             $user = new User();
             $user->name = $githubUserData['name'];
@@ -55,21 +53,12 @@ class UserRepository implements UserInterface
 
             //保存github登录的信息
             $userGithubInformation = new UserGithubInformation();
-            $userGithubInformation->github_id = $githubUserData['github_id'];
+            $userGithubInformation->fill($githubUserData);
             $userGithubInformation->user_id = $user->id;
-            $userGithubInformation->name = $githubUserData['name'];
-            $userGithubInformation->nickname = $githubUserData['nickname'];
-            $userGithubInformation->email = $githubUserData['email'];
-            $userGithubInformation->location = $githubUserData['location'];
             $userGithubInformation->save();
 
-            DB::commit();
-
             return $user;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**

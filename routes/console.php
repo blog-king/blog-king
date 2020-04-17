@@ -17,3 +17,9 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->describe('Display an inspiring quote');
+
+Artisan::command('post:seed', function () {
+    factory(\App\Models\Post::class)->create([
+        'user_id' => \App\User::query()->firstOrFail(),
+    ]);
+})->describe('Display an inspiring quote');

@@ -2,7 +2,9 @@
 
 namespace App;
 
+use App\Models\Concern;
 use App\Models\Post;
+use App\Models\PostTag;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -26,8 +28,12 @@ use Illuminate\Notifications\Notifiable;
  * @property array|null                                                                                                $carousel            轮播图+跳转地址
  * @property \Illuminate\Support\Carbon|null                                                                           $created_at
  * @property \Illuminate\Support\Carbon|null                                                                           $updated_at
+ * @property \Illuminate\Database\Eloquent\Collection|\App\User[]                                                      $concernUsers
+ * @property int|null                                                                                                  $concern_users_count
  * @property \Illuminate\Notifications\DatabaseNotificationCollection|\Illuminate\Notifications\DatabaseNotification[] $notifications
  * @property int|null                                                                                                  $notifications_count
+ * @property \Illuminate\Database\Eloquent\Collection|\App\Models\PostTag[]                                            $postTags
+ * @property int|null                                                                                                  $post_tags_count
  * @property \Illuminate\Database\Eloquent\Collection|\App\Models\Post[]                                               $posts
  * @property int|null                                                                                                  $posts_count
  *
@@ -85,5 +91,18 @@ class User extends Authenticatable
     public function posts()
     {
         return $this->hasMany(Post::class);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany|\App\Models\PostTag
+     */
+    public function postTags()
+    {
+        return $this->hasMany(PostTag::class);
+    }
+
+    public function concernUsers()
+    {
+        return $this->belongsToMany(User::class, Concern::class, 'user_id', 'concern_user_id');
     }
 }

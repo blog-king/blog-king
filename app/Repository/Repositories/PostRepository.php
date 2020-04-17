@@ -8,9 +8,7 @@ use App\Models\PostTag;
 use App\Models\Tag;
 use App\Repository\Interfaces\PostInterface;
 use App\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
@@ -40,9 +38,16 @@ class PostRepository implements PostInterface
         });
     }
 
-    public function getPostsByIds(array $ids): Collection
+    public function getPostsByIds(array $ids, bool $filterUnvisible = true): Collection
     {
-        $collection = Post::query()->with('tags')->whereIn('id', $ids)->get();
+        $collection = Post::query()
+            ->with('tags')
+            ->when($filterUnvisible, function ($query) {
+                /* @var Post $query */
+                $query->visible();
+            })
+            ->whereIn('id', $ids)
+            ->get();
         $collection->each(function (Post $post) {
             if (Post::PRIVACY_PUBLIC == $post->privacy) {
                 Cache::add($this->genPostCacheKeyById($post->id), $post, now()->addHour());
@@ -67,59 +72,34 @@ class PostRepository implements PostInterface
      */
     public function create(int $userId, array $data, array $tagIds = []): ?Post
     {
-        $post = Model::resolveConnection()->transaction(function () use ($userId, $data, $tagIds) {
-            $post = new Post();
-            $post->fill($data);
-            $post->user_id = $userId;
-            $post->save();
+        $post = new Post();
+        $post->fill($data);
+        $post->user_id = $userId;
+        $post->save();
 
-            if (!empty($tagIds)) {
-                $now = date('Y-m-d H:i:s');
-                $bulkInsetValues = Tag::query()
-                    ->whereIn('id', $tagIds)
-                    ->get()
-                    ->map(function (Tag $tag) use ($post, $now) {
-                        return [
-                            'post_id' => $post->id,
-                            'tag_id' => $tag->id,
-                            'created_at' => $now,
-                            'name' => $tag->name,
-                            'user_id' => $post->user_id,
-                        ];
-                    })->toArray();
-                PostTag::query()->insert($bulkInsetValues);
-            }
+        $this->syncTags($post, $tagIds, true);
 
-            return $post;
-        });
-        //创建一篇文章后将缓存预热一次
-        return $this->getPostById($post->id);
+        return $post;
     }
 
     /**
-     * @throws \Exception
-     *
-     * @param int $userId
+     * @param User $user
+     * @param int  $id
      *
      * @return bool
-     *
-     * @param int $id
      */
-    public function delete(int $id, int $userId): bool
+    public function delete(User $user, int $id): bool
     {
-        //$post = $this->getPostById($id);
-        $post = Post::query()->find($id);
-        if (empty($post)) {
-            throw new \Exception('Not Found.', 404);
+        /** @var Post $post */
+        $post = Post::query()->findOrFail($id);
+
+        if ($user->can('delete', $post)) {
+            $post->delete();
+
+            return true;
         }
 
-        if ($post instanceof Post && $post->user_id != $userId) {
-            throw new \Exception('FORBIDDEN.', 403);
-        }
-
-        $post->delete();
-
-        return true;
+        throw new ForbiddenException(__('post.403_not_your_post'));
     }
 
     /**
@@ -133,8 +113,8 @@ class PostRepository implements PostInterface
      *
      * @return bool
      *
-     * @param \App\User $user
-     * @param int       $id
+     * @param User $user
+     * @param int  $id
      */
     public function update(User $user, int $id, array $data, array $tagIds): bool
     {
@@ -151,14 +131,25 @@ class PostRepository implements PostInterface
         throw new ForbiddenException(__('post.403_not_your_post'));
     }
 
-    public function syncTags(Post $post, array $tagIds)
+    /**
+     * 同步文章标签.
+     *
+     * @param \App\Models\Post $post
+     * @param array            $tagIds
+     * @param bool             $create
+     */
+    public function syncTags(Post $post, array $tagIds, bool $create = false)
     {
-        // 把多余的 tags 删掉
-        $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
-        $diffIds = array_diff(
-            $tagIds,
-            $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
-        ); // 看看 tags 的 diff
+        if ($create) {
+            $diffIds = $tagIds;
+        } else {
+            // 把多余的 tags 删掉
+            $post->postTags()->whereNotIn('tag_id', $tagIds)->delete();
+            $diffIds = array_diff(
+                $tagIds,
+                $post->postTags()->select(['post_id', 'tag_id'])->get()->pluck('tag_id')->toArray()
+            ); // 看看 tags 的 diff
+        }
 
         if (!empty($diffIds)) { // 如果 tags 还有区别，就把缺少的补上去
             $now = date('Y-m-d H:i:s');
@@ -176,81 +167,6 @@ class PostRepository implements PostInterface
             if (!empty($addTags)) {
                 PostTag::query()->insert($addTags);
             }
-        }
-    }
-
-    /**
-     * @param string $targetType eg: tag, user
-     * @param int    $targetId
-     * @param array  $options    ['limit' => int, 'page' => ?, 'user_id=> ?, 'next_id' => ?]
-     *
-     * @return array ['data' => ['Post', 'Post'], 'next' => bool]
-     */
-    public function getPosts(string $targetType, int $targetId, array $options = []): array
-    {
-        $limit = $options['limit'];
-        $page = $options['page'];
-        $next = true;
-        $userId = $options['user_id'];
-        switch ($targetType) {
-            case self::TARGET_TYPE_TAG:
-                while (true) {
-                    $postIds = PostTag::query()
-                        ->where(['tag_id' => $targetId])
-                        ->take($limit + 1) //这里 +1 方便计算下一页
-                        ->skip(($page - 1) * $limit)
-                        ->orderByDesc('created_at')
-                        ->pluck('post_id')
-                        ->all();
-                    $posts = $this->getPostsByIds($postIds);
-
-                    $count = $posts->count();
-                    $count <= $limit && $next = false;
-
-                    $result = [];
-                    $i = 0;
-                    /** @var Post $post */
-                    foreach ($posts as $post) {
-                        if ($post->user_id == $userId && (Post::PRIVACY_HIDDEN == $post->privacy || Post::STATUS_DRAFT == $post->status)) {
-                            continue;
-                        }
-                        if ($i == $limit) {
-                            break;
-                        }
-                        ++$i;
-                        $result[] = $post;
-                    }
-                    //拿够一页的数量则中断返回
-                    if ($i >= $limit || $count <= $limit) {
-                        return ['data' => $result, 'next' => $next];
-                    }
-                }
-                break;
-            case self::TARGET_TYPE_USER:
-                $posts = Post::query()
-                    ->with('tags')
-                    ->where(['user_id' => $targetId])
-                    ->when($targetId != $userId, function (Builder $query) {
-                        $query->where(['privacy' => Post::PRIVACY_PUBLIC, 'status' => Post::STATUS_PUBLISH]);
-                    })
-                    ->take($limit + 1) //这里 +1 方便计算下一页
-                    ->skip(($page - 1) * $limit)
-                    ->orderByDesc('created_at')
-                    ->get();
-
-                $result = [];
-                $posts->count() <= $limit && $next = false;
-                $i = 0;
-                foreach ($posts as $post) {
-                    $result[] = $post;
-                    ++$i;
-                    if ($i >= $limit) {
-                        break;
-                    }
-                }
-
-                return ['data' => $result, 'next' => $next];
-                break;
         }
     }
 
@@ -293,6 +209,8 @@ class PostRepository implements PostInterface
             ->visible()
             ->with('postTags')
             ->where(['user_id' => $userId])
+            ->orderByDesc('sort')
+            ->orderByDesc('published_at')
             ->simplePaginate($perPage, ['*'], 'page', $page);
     }
 

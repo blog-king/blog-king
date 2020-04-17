@@ -4,6 +4,7 @@ namespace App\Repository\Repositories;
 
 use App\Models\Tag;
 use App\Repository\Interfaces\TagInterface;
+use App\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -23,6 +24,11 @@ class TagRepository implements TagInterface
         return Cache::remember($cacheKey, 3600, function () use ($parent_id) {
             return Tag::query()->where(['parent_id' => $parent_id])->get();
         });
+    }
+
+    public function getTagsByUser(User $user)
+    {
+        return $user->postTags()->get();
     }
 
     /**

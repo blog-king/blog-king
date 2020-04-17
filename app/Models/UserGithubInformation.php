@@ -25,4 +25,6 @@ use Illuminate\Database\Eloquent\Model;
 class UserGithubInformation extends Model
 {
     protected $table = 'user_github_information';
+
+    protected $fillable = ['user_id', 'github_id', 'name', 'nickname', 'email', 'location'];
 }

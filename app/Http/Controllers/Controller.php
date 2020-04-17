@@ -33,23 +33,6 @@ class Controller extends BaseController
     }
 
     /**
-     * * 500 的错误返回结果格式.
-     *
-     * @param $code
-     * @param $message
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function buildReturn500($code, $message)
-    {
-        return new JsonResponse([
-            'data' => null,
-            'code' => $code,
-            'message' => $message,
-        ], 500);
-    }
-
-    /**
      * 格式化分页.
      *
      * @param \Illuminate\Contracts\Pagination\Paginator $paginator

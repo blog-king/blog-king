@@ -20,11 +20,12 @@ interface PostInterface
     /**
      * 批量获取文章.
      *
-     * @param array $id
+     * @param array $ids
+     * @param bool  $filterUnvisible 是否只显示
      *
      * @return Collection
      */
-    public function getPostsByIds(array $id): Collection;
+    public function getPostsByIds(array $ids, bool $filterUnvisible = true): Collection;
 
     /**
      * 创建文章.
@@ -40,12 +41,12 @@ interface PostInterface
     /**
      * 删除一篇文章.
      *
-     * @param int $id
-     * @param int $userId
+     * @param int  $id
+     * @param User $user
      *
      * @return bool
      */
-    public function delete(int $id, int $userId): bool;
+    public function delete(User $user, int $id): bool;
 
     /**
      * 更新一个文章.
@@ -58,15 +59,4 @@ interface PostInterface
      * @return bool
      */
     public function update(User $user, int $id, array $data, array $tagIds): bool;
-
-    /**
-     * 获取文章列表，根据文章属性，如userId,tagId.
-     *
-     * @param string $targetType
-     * @param int    $targetId
-     * @param array  $options
-     *
-     * @return array
-     */
-    public function getPosts(string $targetType, int $targetId, array $options = []): array;
 }
